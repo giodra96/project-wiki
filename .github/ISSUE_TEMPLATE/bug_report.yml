@@ -1,0 +1,77 @@
+name: 🐛 Bug Report
+description: Report unexpected behavior, broken links, template errors, or ingestion failures
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting an issue! Before submitting, please check the [FAQ](https://github.com/giodra96/project-wiki#faq) to see if your question is already addressed.
+
+  - type: dropdown
+    id: host_agent
+    attributes:
+      label: Host Agent / IDE
+      description: Which coding agent or IDE environment are you running Project Wiki in?
+      options:
+        - GitHub Copilot (VS Code / JetBrains)
+        - Claude Code
+        - Antigravity
+        - Codex / OpenCode
+        - Cursor
+        - Other (please specify in description)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mode_involved
+    attributes:
+      label: Mode or Workflow Involved
+      description: Which skill mode or operational workflow triggered the issue?
+      options:
+        - init (Scaffold new wiki)
+        - scan (Analyze existing codebase)
+        - update (Update specs / notes)
+        - update with Document Intake (PDF/DOCX/TXT ingestion)
+        - sync (Reconcile manual code changes)
+        - maintain (Wiki health audit & semantic lint)
+        - Automatic Context Preflight
+        - Automatic Post-Implementation Wiki Update
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description of the Bug
+      description: A clear and concise description of what went wrong.
+    validations:
+      required: true
+
+  - type: textarea
+    id: prompt_reproduction
+    attributes:
+      label: Prompt & Reproduction Steps
+      description: What exact prompt or command was given to the agent?
+      placeholder: |
+        1. Executed `/project-wiki update ...`
+        2. Prompted: "..."
+        3. Observed the agent failed to ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected Behavior
+      description: What should have happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs_or_tree
+    attributes:
+      label: Minimal Wiki Tree or Relevant Logs
+      description: Include relevant excerpts from `.project-wiki/logs/` or the `.project-wiki/` folder structure if applicable.
+      render: text

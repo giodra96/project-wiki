@@ -387,28 +387,17 @@ Existing content in those files must be preserved. Only the `PROJECT-WIKI` marke
 
 ## Contributing
 
-Bug reports, design discussions, and pull requests are welcome. Useful contributions include workflow improvements, additional validation, clearer templates, ingestion fixes, compatibility notes for other agents, and documentation corrections.
+Bug reports, design discussions, and pull requests are warmly welcome!
 
-When changing this skill, keep `SKILL.md` compact. Put long procedures in `references/` and reusable document shapes in `assets/`.
+- Please read our [Contributing Guide](CONTRIBUTING.md) for local testing instructions, development setup, and the Pull Request checklist.
+- Review our [Code of Conduct](CODE_OF_CONDUCT.md) for community standards.
+- Review our [Security Policy](SECURITY.md) to report vulnerabilities responsibly.
 
-After editing the skill, verify:
-
-- `name` in `SKILL.md` matches the folder name: `project-wiki`.
-- `description` includes discovery keywords such as project wiki, knowledge base, requirements, change request, ADR, technical documentation, traceability, sync, and maintain.
-- `argument-hint` lists only user-facing modes.
-- Workflow names in `SKILL.md`, `references/workflows.md`, and this README stay aligned.
-- Templates remain compatible with the canonical structure in `references/wiki-structure.md`.
-- The always-on instruction block stays aligned across `references/workflows.md`, `assets/document-templates.md`, and this README.
-- Document ingestion behavior stays aligned across `scripts/ingest_document.py`, `references/document-ingestion.md`, `references/workflows.md`, and this README.
-- Alert, semantic lint, durable analysis, and parseable log conventions stay aligned across references, templates, and README.
-
-Run this smoke check before submitting intake-related changes:
+Before submitting changes, run the ingestion smoke check:
 
 ```bash
 python3 scripts/ingest_document.py --help
 ```
-
-When reporting a bug, include the agent or IDE, the selected mode, the prompt or source type, the expected result, the actual result, and a minimal relevant wiki tree when possible.
 
 ## Design Principles
 

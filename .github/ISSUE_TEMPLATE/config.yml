@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 📖 Project Wiki Documentation
+    url: https://github.com/giodra96/project-wiki#documentation
+    about: Read the canonical references on structure, workflows, and document ingestion.
+  - name: 💬 Questions & Community Discussions
+    url: https://github.com/giodra96/project-wiki/discussions
+    about: Ask questions, share workflows, or discuss agent configurations.

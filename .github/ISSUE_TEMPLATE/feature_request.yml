@@ -1,0 +1,47 @@
+name: ✨ Feature Request
+description: Propose a new workflow mode, template, document ingestion format, or agent integration
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea to make Project Wiki better? We'd love to hear it! Please outline the proposed enhancement and the problem it solves.
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Enhancement Category
+      description: What area does this proposal relate to?
+      options:
+        - New or Refined Workflow Mode
+        - Document Ingestion / Parsing (PDF, DOCX, etc.)
+        - Schema or Document Template (assets/)
+        - Host Agent Compatibility & Setup
+        - Semantic Linting / Wiki Health
+        - Documentation & References
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem_statement
+    attributes:
+      label: Problem / Motivation
+      description: Is your feature request related to a specific limitation or pain point?
+      placeholder: "When working on large monorepos with multiple agents..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed Solution & Design
+      description: Describe your proposed approach and how the agent should handle it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative solutions or workarounds you considered?

@@ -7,7 +7,6 @@ Turn requirements, decisions, code knowledge, and project history into an indexe
 </p>
 
 <p align="center">
-  <a href="#extending-karpathys-llm-wiki-for-codebases">Karpathy's LLM Wiki</a> &middot;
   <a href="#quick-start">Quick start</a> &middot;
   <a href="#see-it-in-action">Examples</a> &middot;
   <a href="#command-modes">Commands</a> &middot;
@@ -61,23 +60,6 @@ Project Wiki tracks:
 - **Execution & Health**: Implementation state, work item scans, open questions, and semantic lint reports.
 - **Traceability & Governance**: Bi-directional links between requirements and source paths, persistent risk alerts, and wiki audit logs.
 
-## Extending Karpathy's LLM Wiki for Codebases
-
-Project Wiki is directly grounded in Andrej Karpathy's [LLM Wiki concept](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f): the insight that knowledge shouldn't be re-discovered from scratch via raw RAG on every prompt, but compiled into a **persistent, compounding Markdown artifact** where the AI handles the heavy bookkeeping of cross-referencing, indexing, and synthesis.
-
-Karpathy defined the foundational three-tier architecture: **Raw sources** (immutable inputs), **The Wiki** (AI-maintained structured notes with `index.md` and parseable `log.md`), and **The Schema** (instructions in `AGENTS.md` / `CLAUDE.md` governing the agent's discipline).
-
-**Project Wiki brings this exact pattern into repository engineering**, expanding it to solve the unique challenges of software codebases and autonomous coding agents:
-
-| Dimension | Karpathy's Original LLM Wiki | Project Wiki (Codebase-Native) |
-| :--- | :--- | :--- |
-| **Domain** | General personal notes & research | Software repositories, system architecture, and team specs |
-| **Retrieval model** | Flat category index / broad lookups | **Progressive disclosure**: Layered routing (`INDEX.md` → section indexes → records) loads only minimal files to conserve token budget |
-| **Code Connection** | Disconnected from source code files | **Bidirectional traceability**: Requirements, ADRs, and technical docs link directly to repository source paths |
-| **Agent Lifecycle** | Manual conversational prompting | **Zero-friction loop**: Automatic context preflight before coding and automatic wiki updates after changes |
-| **Truth & Evolution** | Append-heavy or direct overwrites | **Intent vs. Reality**: Separates product intent (requirements) from observed code behavior (technical docs) + Agile CRs |
-| **Provenance Policy** | Raw sources stored alongside notes | **Intake gating**: External documents (`intake/`) stay read-only provenance until integrated into canonical KB files |
-| **Health & Hygiene** | Periodic manual lint prompt | **Semantic linting**: Automated audits for contradictions, broken links, stale references, and risk alerts |
 
 ## Quick Start
 

@@ -1,17 +1,26 @@
 <h1 align="center">Project Wiki</h1>
 
-<p align="center"><strong>Durable, traceable project memory for AI coding agents.</strong></p>
+<p align="center"><strong>An extension of <a href="https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f">Karpathy's LLM Wiki</a>: durable, traceable project memory for AI coding agents.</strong></p>
 
 <p align="center">
 Turn requirements, decisions, code knowledge, and project history into an indexed wiki that lives beside the source code and stays useful across agent sessions.
 </p>
 
 <p align="center">
+  <a href="#extending-karpathys-llm-wiki-for-codebases">Karpathy's LLM Wiki</a> &middot;
   <a href="#quick-start">Quick start</a> &middot;
   <a href="#see-it-in-action">Examples</a> &middot;
   <a href="#command-modes">Commands</a> &middot;
   <a href="#documentation">Documentation</a> &middot;
   <a href="#contributing">Contributing</a>
+</p>
+
+<p align="center">
+  <img alt="Claude Code" src="https://img.shields.io/badge/Claude_Code-D97757?logo=anthropic&logoColor=white">
+  <img alt="GitHub Copilot" src="https://img.shields.io/badge/GitHub_Copilot-000000?logo=githubcopilot&logoColor=white">
+  <img alt="Antigravity" src="https://img.shields.io/badge/Antigravity-4285F4?logo=google&logoColor=white">
+  <img alt="Codex" src="https://img.shields.io/badge/Codex-412991?logo=openai&logoColor=white">
+  <img alt="Cursor" src="https://img.shields.io/badge/Cursor-000000?logo=cursor&logoColor=white">
 </p>
 
 <p align="center">
@@ -22,9 +31,12 @@ Turn requirements, decisions, code knowledge, and project history into an indexe
   <img alt="Markdown based storage" src="https://img.shields.io/badge/storage-Markdown-111827?logo=markdown">
 </p>
 
-Project Wiki is an IDE-neutral agent skill for creating and maintaining an agent-readable knowledge base in `.project-wiki/`. It works with chat-based coding agents such as GitHub Copilot in VS Code, Claude Code, Codex, and other compatible tools that can read and write repository files.
+Project Wiki is an IDE-neutral agent skill for creating and maintaining an agent-readable knowledge base in `.project-wiki/`. It works with chat-based coding agents such as GitHub Copilot in VS Code, Claude Code, Antigravity, Codex, Cursor, and other compatible tools that can read and write repository files.
 
-The wiki is designed for progressive disclosure: agents start at one short index, follow the smallest relevant set of links, and avoid flooding the context window with the entire project history.
+The wiki is designed for **progressive disclosure**: agents start at one short index, follow the smallest relevant set of links, and avoid flooding the context window with the entire project history.
+
+> [!TIP]
+> **Zero-Friction Workflow**: Once initialized, you don't need manual commands for everyday tasks. Agents automatically consult `.project-wiki/` before coding and update affected documentation and traceability before completing the response.
 
 ## Why Project Wiki?
 
@@ -33,41 +45,50 @@ AI coding sessions are temporary. Requirements, architectural decisions, impleme
 When that knowledge is scattered across chats, meeting notes, source documents, and source code, every new session starts with reconstruction. Project Wiki keeps the durable parts inside the repository and gives agents a repeatable way to retrieve and maintain them.
 
 | Without Project Wiki | With Project Wiki |
-| --- | --- |
-| Re-explain the project in each session | Start from an indexed project overview |
-| Requirements and code drift independently | Trace requirements, decisions, docs, and source paths |
-| Meeting notes disappear into chat history | Classify them into requirements, CRs, ADRs, and open questions |
-| Agents load too much context or guess | Route from `INDEX.md` to only the relevant documents |
-| Manual code changes leave documentation stale | Reconcile implementation reality with `sync` |
-| Contradictions and gaps remain implicit | Track semantic lint findings and durable alerts |
+| :--- | :--- |
+| **Context loss**: Re-explain architecture, intent, and rules in every new chat | **Persistent memory**: Agents instantly recall project context, goals, and constraints |
+| **Silent drift**: Requirements and code evolve independently and fall out of sync | **Bidirectional traceability**: Code, requirements, ADRs, and tests stay explicitly linked |
+| **Ephemeral knowledge**: Key decisions and meeting notes get lost in chat history | **Structured capture**: Notes and chats are classified into specs, CRs, and ADRs |
+| **Context bloat & guessing**: Agents load too many files or hallucinate missing facts | **Progressive disclosure**: Agents use `INDEX.md` to load only the exact records needed |
+| **Stale documentation**: Manual code refactors leave documentation outdated | **Effortless sync**: Reconcile docs with real code changes via `/project-wiki sync` |
+| **Implicit risks & gaps**: Contradictions, assumptions, and edge-cases remain hidden | **Active governance**: Continuous semantic linting tracks gaps, risks, and alerts explicitly |
 
-Project Wiki can track:
+Project Wiki tracks:
 
-- Project goals, constraints, and explicit product intent.
-- Functional and non-functional requirements.
-- Lightweight change requests and scope history.
-- Architectural decisions and their consequences.
-- Technical documentation for implemented code.
-- Work items, scans, sync reports, and implementation state.
-- Open questions, significant risks, conflicts, and assumptions.
-- Durable analyses that connect existing project records.
-- Traceability between requirements, changes, decisions, docs, and source paths.
-- An audit log of meaningful knowledge base edits.
+- **Product Intent**: Project vision, constraints, and functional/non-functional requirements.
+- **Architecture & Technical Design**: Architectural decisions (ADRs), component architecture, and technical behavior.
+- **Change & Evolution**: Agile change requests (CRs), scope adjustments, and changelog history.
+- **Execution & Health**: Implementation state, work item scans, open questions, and semantic lint reports.
+- **Traceability & Governance**: Bi-directional links between requirements and source paths, persistent risk alerts, and wiki audit logs.
+
+## Extending Karpathy's LLM Wiki for Codebases
+
+Project Wiki is inspired by Andrej Karpathy's concept of the [LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f): using an AI-maintained, structured Markdown knowledge base as persistent memory rather than relying on noisy vector RAG over unstructured notes.
+
+While Karpathy's original pattern focused on general personal research and notes, **Project Wiki adapts and extends this pattern specifically for software repositories and autonomous coding agents**:
+
+| Dimension | Karpathy's Original LLM Wiki | Project Wiki (Codebase-Native) |
+| :--- | :--- | :--- |
+| **Scope** | General personal knowledge & research | Software repositories, system architecture, and team specs |
+| **Retrieval model** | Full-file lookups or broad semantic search | **Progressive disclosure**: Agents query `INDEX.md` to load only the smallest relevant document set, protecting context tokens |
+| **Code Connection** | Disconnected from source code files | **Bidirectional traceability**: Requirements, ADRs, and technical docs link directly to repository source paths |
+| **Agent Lifecycle** | Manual prompting on demand | **Zero-friction loop**: Automatic context preflight before coding and automatic wiki updates after changes |
+| **Truth & Evolution** | Append-heavy / overwrite notes | **Intent vs. Reality**: Separates product intent (requirements) from observed code behavior (technical docs) + Agile CRs |
+| **Provenance Policy** | Raw source files mixed into the wiki | **Intake gating**: External documents (`intake/`) stay read-only provenance until integrated into canonical KB files |
+| **Health & Hygiene** | Manual inspection | **Semantic linting**: Automated audits for contradictions, broken links, stale references, and risk alerts |
 
 ## Quick Start
 
 ### 1. Install the skill
 
-Place this directory in a skill location supported by your agent. A personal installation is available across projects; a repository installation can be shared with the team.
+You can install Project Wiki either **globally** on your machine (for your personal use across all projects) or **inside the repository** (to share it with your entire team via Git).
 
-| Scope | Example path |
-| --- | --- |
-| Personal Agent Skills installation | `~/.agents/skills/project-wiki/` |
-| Repository Agent Skills installation | `.agents/skills/project-wiki/` |
-| GitHub Copilot repository skill | `.github/skills/project-wiki/` |
-| Claude Code personal skill | `~/.claude/skills/project-wiki/` |
+| Scope | Description | Typical Path |
+| :--- | :--- | :--- |
+| **Personal (Global)** | Active for all your local projects | `~/.agents/skills/project-wiki/`<br>`~/.claude/skills/project-wiki/` |
+| **Repository (Shared)** | Committed to Git; available to everyone on the team | `.agents/skills/project-wiki/`<br>`.github/skills/project-wiki/` |
 
-For example, after downloading or cloning this project:
+For example, to install it personally for Agent Skills compatible tools:
 
 ```bash
 mkdir -p ~/.agents/skills
@@ -155,7 +176,17 @@ flowchart LR
   Update --> Catalog[Registry, status, traceability, and audit log]
 ```
 
-Indexes route, records explain, and traceability connects. Agents start at `.project-wiki/INDEX.md`, open only the records needed for the current task, and update the affected knowledge after the work is complete.
+Project Wiki is built around three distinct architectural layers:
+
+1. **Routing & Discovery Layer (`INDEX.md`, `REGISTRY.yml`, Section Indexes)**:
+   Maintains a high-level map of the project. When an agent receives a prompt, it consults `INDEX.md` and loads only the minimal relevant subset of files, protecting the LLM context window from token bloat.
+2. **Canonical Knowledge Layer (`requirements/`, `decisions/`, `technical/`, `traceability/`, `alerts/`)**:
+   The structured long-term memory of the repository. Every requirement (`REQ-*`), decision (`ADR-*`), and change request (`CR-*`) has a permanent ID and explicit links to related source code paths.
+3. **Active Agent Engine (Preflight, Auto-Update, Ingestion, `sync`, `maintain`)**:
+   The operational skill runtime that keeps the wiki synchronized with the codebase. It automatically reads context before coding and updates documentation after changes without requiring manual user commands.
+
+> [!NOTE]
+> **The Knowledge Provenance Principle**: Raw external documents (PDF, DOCX) ingested via `intake/` are treated as **provenance** (evidence), never as unreviewed canonical truth. Information becomes canonical only when classified and integrated into official wiki records. Likewise, code scanned via `sync` documents observed technical reality, while confirmed business requirements require explicit product intent.
 
 ### Repository Layout
 
@@ -270,24 +301,24 @@ The complete structure is always created. Files that are not useful yet can rema
 
 ```text
 .project-wiki/
-|-- INDEX.md
-|-- PROJECT.md
-|-- STATUS.md
-|-- REGISTRY.yml
-|-- WIKI_VERSION.yml
-|-- requirements/
-|-- changes/
-|-- decisions/
-|-- technical/
-|-- implementation/
-|-- traceability/
+|-- INDEX.md              # Root routing map (entrypoint for agents & humans)
+|-- PROJECT.md            # Project vision, core constraints, and stack
+|-- STATUS.md             # Current milestone, active work, and blockers
+|-- REGISTRY.yml          # Machine-readable catalog of all wiki documents
+|-- WIKI_VERSION.yml      # Applied schema version tracker (e.g., 1.3.0)
+|-- requirements/         # Functional and non-functional specifications
+|-- changes/              # Agile Change Requests (CRs) and changelog
+|-- decisions/            # Architectural Decision Records (ADRs)
+|-- technical/            # System architecture and component technical docs
+|-- implementation/       # Work breakdowns, scans, and sync reports
+|-- traceability/         # Requirement-to-code traceability matrices
 |-- sources/
-|   `-- inbox/
-|-- intake/
-|-- analysis/
-|-- maintenance/
-|-- alerts/
-`-- logs/
+|   `-- inbox/            # Drop zone for external raw documents
+|-- intake/               # Extracted artifacts and chunks from ingested docs
+|-- analysis/             # Deep-dive trade-offs and multi-record syntheses
+|-- maintenance/          # Semantic lint and wiki health reports
+|-- alerts/               # Active warnings, risks, and unresolved conflicts
+`-- logs/                 # Chronological audit log of knowledge base edits
 ```
 
 The canonical tree, frontmatter, ID conventions, registry shape, statuses, and linking rules live in [references/wiki-structure.md](references/wiki-structure.md). The always-on instruction file lives outside `.project-wiki/`.
@@ -397,23 +428,27 @@ When reporting a bug, include the agent or IDE, the selected mode, the prompt or
 
 ## Design Principles
 
-- Keep the wiki complete but progressively loaded.
-- Preserve original requirements separately from later changes.
-- Prefer stable IDs over title-based references.
-- Mark uncertainty explicitly.
-- Keep change requests agile.
-- Update the wiki automatically after agent-made code changes.
-- Use `sync` for manual or external code changes.
-- Use `maintain` for wiki hygiene.
-- Use semantic lint to find contradictions, stale claims, source gaps, risky assumptions, and alert candidates.
-- Track significant warning conditions as alerts and resolve them with evidence instead of deleting them.
-- File durable answers selectively into existing docs or linked `analysis/` pages.
-- Log meaningful knowledge base edits in `logs/wiki-log-YYYY-MM.md`.
-- Use parseable wiki log headings: `## [YYYY-MM-DD] mode | WLOG-YYYYMMDD-NNN | Summary`.
-- Install always-on project instructions during `init` and `scan`.
-- Keep document intake as provenance and exclude integrated/archived intake from normal coding context.
-- Write wiki content in English and respond in chat using the user's language.
-- Link related records instead of duplicating long explanations.
+### Context & Token Efficiency
+- **Progressive disclosure**: Keep the wiki comprehensive, but load only minimal relevant records via `INDEX.md`.
+- **Intake as provenance**: Keep raw external document extractions separate from canonical wiki docs.
+- **Link over duplication**: Reference stable document IDs rather than repeating long explanations.
+
+### Knowledge Integrity & Traceability
+- **Stable IDs over titles**: Use unambiguous identifiers (`REQ-*`, `ADR-*`, `CR-*`) for reliable linking.
+- **Intent vs. Observation**: Preserve explicit product intent separately from observed code behavior.
+- **Explicit uncertainty**: Mark gaps, assumptions, and conflicts as open questions or alerts rather than guessing.
+- **Agile change tracking**: Record scope modifications through lightweight Change Requests (CRs).
+
+### Automation & Agent Lifecycle
+- **Zero-friction updates**: Update affected wiki records automatically after agent-made code edits.
+- **External reconciliation**: Use `sync` to reconcile documentation when source code changes outside chat.
+- **Continuous maintenance**: Use `maintain` to audit broken links, stale references, and schema health.
+- **Always-on instructions**: Install repository instructions during `init` and `scan` to ensure continuous agent adoption.
+
+### Governance & Auditing
+- **Active semantic linting**: Detect contradictions, stale claims, and unsupported code assumptions.
+- **Alert resolution with evidence**: Track significant risks as alerts; resolve or dismiss them with evidence, never silent deletion.
+- **Parseable audit logs**: Record meaningful knowledge base changes in structured monthly logs (`logs/wiki-log-YYYY-MM.md`).
 
 ## FAQ
 

@@ -12,8 +12,9 @@ This guide outlines our development workflow, core architectural principles, and
 
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Security Policy](SECURITY.md)
-- [Canonical Wiki Structure](references/wiki-structure.md)
-- [Workflows Specification](references/workflows.md)
+- [Machine-Readable Schema Contract](schema/project-wiki.yml)
+- [Human Wiki Structure Reference](references/wiki-structure.md)
+- [Workflow Index](references/workflows.md)
 - [Document Ingestion](references/document-ingestion.md)
 - [Document Templates](assets/document-templates.md)
 
@@ -21,7 +22,7 @@ This guide outlines our development workflow, core architectural principles, and
 
 ## Local Development & Testing
 
-Since Project Wiki is an agent skill composed of runtime prompt instructions, reference markdown specifications, and a Python extraction helper, testing involves running both the script and live agent interactions.
+Project Wiki combines runtime instructions, reference documentation, templates, a schema contract, and Python helpers for ingestion, validation, and drift checks. Testing covers the automated toolchain plus representative live-agent interactions.
 
 ### 1. Clone the repository
 
@@ -32,7 +33,7 @@ cd ~/Projects/project-wiki
 
 ### 2. Set up Python environment (for document intake)
 
-Text and Markdown extractions use standard library Python. For testing PDF and DOCX parsing:
+Text and Markdown extraction uses standard library Python. Inbox and wiki structure checks use PyYAML and markdown-it-py, while PDF and DOCX parsing uses the remaining helper dependencies:
 
 ```bash
 python3 -m venv .venv
@@ -40,11 +41,44 @@ source .venv/bin/activate
 pip install -r scripts/requirements.txt
 ```
 
-Verify the CLI smoke test:
+Verify the CLI smoke tests:
 
 ```bash
+python3 scripts/check_contracts.py --help
+python3 scripts/check_inbox.py --help
 python3 scripts/ingest_document.py --help
+python3 scripts/validate_wiki.py --help
 ```
+
+Run the automated ingestion tests:
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+The suite covers:
+
+- Chunk sizing, semantic section boundaries, metadata, hints, and stable chunk IDs.
+- Intake ID allocation, malformed IDs, and existing-ID collisions.
+- Empty input and missing PyMuPDF, python-docx, or PyYAML dependencies.
+- Parseable and mutually consistent YAML, Markdown frontmatter, and JSON artifacts.
+- Idempotent intake indexes and cleanup or rollback after failures.
+- Inbox duplicate detection, historical intake validation, and hash-verified quarantine.
+- Canonical wiki tree, YAML/frontmatter, IDs, statuses, registries, paths, links, anchors, and validator JSON output.
+- Manifest loading and drift detection across schema versions, README/workflow paths, canonical tree, and templates.
+
+GitHub Actions runs the same suite, Python compilation, and CLI smoke checks on Python 3.10 and 3.13 for every push and pull request.
+
+### Schema Contract Changes
+
+For any schema version, tree, registry version, frontmatter, status, ID, template inventory, or workflow-contract change:
+
+1. Edit `schema/project-wiki.yml` first.
+2. Update the checked human views in `references/`, `README.md`, and the affected catalog routed by `assets/document-templates.md`.
+3. Add or update a mutation test in `tests/test_schema_contract.py`.
+4. Run `python3 scripts/check_contracts.py` and the full unittest suite.
+
+Do not update duplicated version or path strings independently of the manifest.
 
 ### 3. Link the skill into your preferred agent
 
@@ -74,13 +108,13 @@ When authoring or modifying skill resources, always uphold these non-negotiable 
 ### 1. Keep `SKILL.md` Compact
 `SKILL.md` is loaded directly into the AI agent's active system prompt. To protect the agent's context budget:
 - Keep `SKILL.md` under 150 lines.
-- Place extensive workflows and step-by-step procedures in `references/workflows.md`.
-- Place canonical tree layouts, frontmatter schemas, and ID rules in `references/wiki-structure.md`.
-- Place reusable generated markdown and YAML shapes in `assets/document-templates.md`.
+- Place each extensive workflow in the focused `references/*-workflow*.md` family routed by `references/workflows.md`.
+- Define machine-readable tree, frontmatter, status, and ID contracts in `schema/project-wiki.yml`; explain them in `references/wiki-structure.md`.
+- Place reusable generated markdown and YAML shapes in the focused catalog routed by `assets/document-templates.md`.
 
 ### 2. Respect the Knowledge Provenance Principle
 - External ingested documents (`.project-wiki/intake/`) are **provenance (evidence)**, not canonical project truth.
-- Information becomes canonical only after it has been reviewed and integrated into official `requirements/`, `decisions/`, or `technical/` records.
+- Information becomes canonical only after it has been reviewed and integrated into official `requirements/`, `changes/decisions/`, or `technical/` records.
 - Inferred or scanned code behavior belongs under `technical/` and does not become a confirmed requirement without explicit product-intent backing.
 
 ### 3. Ensure Bidirectional Traceability
@@ -117,13 +151,26 @@ Before submitting a Pull Request, verify the following:
 - [ ] `description` in `SKILL.md` includes relevant discovery keywords.
 - [ ] `argument-hint` lists only user-facing modes (`init | scan | update | sync | maintain`).
 - [ ] `SKILL.md` remains compact; detailed procedural logic is placed in `references/`.
-- [ ] Workflow names stay aligned across `SKILL.md`, `references/workflows.md`, and `README.md`.
-- [ ] Templates in `assets/document-templates.md` match `references/wiki-structure.md`.
-- [ ] The always-on instruction block (`PROJECT-WIKI`) stays aligned across files.
-- [ ] Python smoke check passes:
+- [ ] Workflow names and routes stay aligned across `SKILL.md`, `references/workflows.md`, focused workflow references, and `README.md`.
+- [ ] Templates and human references match `schema/project-wiki.yml`.
+- [ ] `schema/project-wiki.yml` remains the single machine-readable schema contract and the drift check passes:
   ```bash
-  python3 scripts/ingest_document.py --help
+  python3 scripts/check_contracts.py
   ```
+- [ ] The always-on instruction block (`PROJECT-WIKI`) stays aligned across files.
+- [ ] Python helper smoke checks pass:
+  ```bash
+  python3 scripts/check_contracts.py --help
+  python3 scripts/check_inbox.py --help
+  python3 scripts/ingest_document.py --help
+  python3 scripts/review_progress.py --help
+  python3 scripts/validate_wiki.py --help
+  ```
+- [ ] Automated ingestion tests pass:
+  ```bash
+  python3 -m unittest discover -s tests -v
+  ```
+- [ ] New ingestion behavior includes a focused regression test and remains compatible with the Python versions in `.github/workflows/tests.yml`.
 - [ ] Tested live with at least one compatible coding agent.
 
 ---

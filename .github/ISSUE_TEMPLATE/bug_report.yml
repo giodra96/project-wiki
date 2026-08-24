@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting an issue! Before submitting, please check the [FAQ](https://github.com/giodra96/project-wiki#faq) to see if your question is already addressed.
+        Thanks for reporting an issue! Before submitting, please check the [Documentation](https://github.com/giodra96/project-wiki#documentation) and existing issues.
 
   - type: dropdown
     id: host_agent

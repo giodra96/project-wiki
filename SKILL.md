@@ -10,7 +10,7 @@ Use this skill to create and maintain an agent-readable project knowledge base i
 
 The skill is IDE-neutral. Apply the workflow with any chat-based coding agent that can read and write files in a repository.
 
-Current project wiki schema version: `1.3.0`.
+Current project wiki schema version: `1.4.0` (canonical value: `./schema/project-wiki.yml`).
 
 ## Operating Principle
 
@@ -39,15 +39,21 @@ Always treat `.project-wiki/INDEX.md` as the routing entrypoint and `.project-wi
 Load these files only when needed:
 
 - `./references/wiki-structure.md` for the canonical `.project-wiki/` folder tree, file responsibilities, IDs, and linking rules.
-- `./references/workflows.md` for init, scan, update, sync, automatic context preflight, automatic post-implementation updates, and maintenance procedures.
+- `./references/workflows.md` to route to the focused workflow family for the current mode or automatic trigger.
+- `./references/automatic-workflows.md` for automatic context preflight, post-implementation updates, and always-on instruction bootstrap.
 - `./references/document-ingestion.md` for PDF/DOCX/text document intake, extraction artifacts, chunking, review gating, and KB integration rules.
-- `./assets/document-templates.md` for frontmatter and body templates used when creating wiki files.
+- `./assets/document-templates.md` to route to the focused frontmatter and body template family for the artifact being created.
+- `./schema/project-wiki.yml` for the canonical machine-readable schema version, tree, frontmatter fields, statuses, ID patterns, and documentation bindings.
+- `./scripts/check_contracts.py` for deterministic drift checks between the schema manifest, README, workflows, templates, and reference tree.
+- `./scripts/check_inbox.py` for deterministic source inbox discovery, hashing, and duplicate classification.
+- `./scripts/validate_wiki.py` for deterministic wiki structure, YAML, frontmatter, ID, registry, path, and link validation.
+- `./scripts/review_progress.py` for deterministic large-document review batches and atomic ledger updates.
 - `./scripts/ingest_document.py` and `./scripts/requirements.txt` for external document extraction during document-based update workflows.
 
 ## Default Workflow
 
 1. Determine the task mode: `init`, `scan`, `update`, `sync`, or `maintain`.
-2. For any task that involves implementing, modifying, debugging, refactoring, testing, or planning code, automatically run the context preflight from `./references/workflows.md` before touching source files.
+2. For any task that involves implementing, modifying, debugging, refactoring, testing, or planning code, automatically run the context preflight from `./references/automatic-workflows.md` before touching source files.
 3. After AI-assisted source code changes, automatically update the affected wiki docs, registry, status, and traceability maps before finishing.
 4. If `.project-wiki/INDEX.md` exists, read it first. If not, use `init` or `scan` depending on whether the repository already contains meaningful source code.
 5. Open only the local index or document paths needed for the task.
@@ -77,6 +83,8 @@ Load these files only when needed:
 - Put explicit business or product intent in `requirements/`; put implemented or observed code behavior in `technical/`. Unconfirmed code-inferred requirements belong in `requirements/open-questions.md`, not in requirement files.
 - Scale requirements by project-specific topic when needed: keep overview files as routing for small projects, and create `requirements/functional/` or `requirements/non-functional/` topic files only when stable requirement areas accumulate enough content to improve retrieval.
 - Keep document intake as immutable provenance, not canonical project knowledge. Never read external PDF/DOCX source documents directly into model context; use `./scripts/ingest_document.py` and the generated intake artifacts.
-- Treat `.project-wiki/sources/inbox/` as the source drop zone for real source documents only; ignore housekeeping files such as `README.md`, `.gitkeep`, `.DS_Store`, hidden files, files beginning with `_`, and temporary or partial downloads before registering sources in `.project-wiki/sources/SOURCE_REGISTRY.yml`.
+- Before registering or ingesting files from `.project-wiki/sources/inbox/`, run `./scripts/check_inbox.py --wiki-root .project-wiki --format json --quarantine-skips` and follow its deterministic `process`, `skip`, and `review` actions. Do not reimplement byte-level duplicate detection, retry-record selection, or duplicate movement in model reasoning.
+- During `maintain`, run `./scripts/validate_wiki.py --wiki-root .project-wiki --format json` before semantic lint. Treat its structural findings as authoritative and do not reproduce those checks with model reasoning.
 - For document integration, open chunks progressively until every relevant item is classified. Use qualitative review gating from `./references/document-ingestion.md`: direct integration for clear low-impact information, `review.md` for significant ambiguity, risk, conflict, or materially cross-section updates.
+- For document integration, track every manifest chunk in `review-progress.yml`. Process all chunks in batches, record every classification or an evidence-based skip reason, and never mark an intake `reviewed` or `integrated` while coverage is incomplete.
 - Write all project wiki files, templates, logs, and always-on project instruction blocks in English. Reply in chat using the language used by the user.

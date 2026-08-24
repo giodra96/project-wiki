@@ -24,13 +24,15 @@ Turn requirements, decisions, code knowledge, and project history into an indexe
 
 <p align="center">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg"></a>
-  <img alt="Wiki schema 1.3.0" src="https://img.shields.io/badge/wiki_schema-1.3.0-355c7d">
+  <img alt="Wiki schema 1.4.0" src="https://img.shields.io/badge/wiki_schema-1.4.0-355c7d">
   <img alt="Five project wiki workflows" src="https://img.shields.io/badge/workflows-5-2f855a">
   <img alt="IDE neutral agent skill" src="https://img.shields.io/badge/agent_skill-IDE--neutral-6b7280">
   <img alt="Markdown based storage" src="https://img.shields.io/badge/storage-Markdown-111827?logo=markdown">
 </p>
 
 Project Wiki is an IDE-neutral agent skill for creating and maintaining an agent-readable knowledge base in `.project-wiki/`. It works with chat-based coding agents such as GitHub Copilot in VS Code, Claude Code, Antigravity, Codex, Cursor, and other compatible tools that can read and write repository files.
+
+Runtime paths, artifact names, and generated values are defined once in [schema/project-wiki.yml](schema/project-wiki.yml).
 
 The wiki is designed for **progressive disclosure**: agents start at one short index, follow the smallest relevant set of links, and avoid flooding the context window with the entire project history.
 
@@ -51,15 +53,6 @@ When that knowledge is scattered across chats, meeting notes, source documents, 
 | **Context bloat & guessing**: Agents load too many files or hallucinate missing facts | **Progressive disclosure**: Agents use `INDEX.md` to load only the exact records needed |
 | **Stale documentation**: Manual code refactors leave documentation outdated | **Effortless sync**: Reconcile docs with real code changes via `/project-wiki sync` |
 | **Implicit risks & gaps**: Contradictions, assumptions, and edge-cases remain hidden | **Active governance**: Continuous semantic linting tracks gaps, risks, and alerts explicitly |
-
-Project Wiki tracks:
-
-- **Product Intent**: Project vision, constraints, and functional/non-functional requirements.
-- **Architecture & Technical Design**: Architectural decisions (ADRs), component architecture, and technical behavior.
-- **Change & Evolution**: Agile change requests (CRs), scope adjustments, and changelog history.
-- **Execution & Health**: Implementation state, work item scans, open questions, and semantic lint reports.
-- **Traceability & Governance**: Bi-directional links between requirements and source paths, persistent risk alerts, and wiki audit logs.
-
 
 ## Quick Start
 
@@ -147,7 +140,7 @@ Audit the wiki for broken links, missing registry entries, duplicate IDs,
 stale indexes, unlinked records, and outdated status notes.
 ```
 
-Maintenance checks the schema version, repairs safe structural inconsistencies, writes semantic lint results, updates significant alerts, and preserves history.
+Maintenance runs deterministic structural validation first, repairs safe findings, then uses agent-assisted semantic lint for contradictions, stale meaning, traceability quality, and risks.
 
 ## How It Works
 
@@ -164,7 +157,7 @@ Project Wiki is built around three distinct architectural layers:
 
 1. **Routing & Discovery Layer (`INDEX.md`, `REGISTRY.yml`, Section Indexes)**:
    Maintains a high-level map of the project. When an agent receives a prompt, it consults `INDEX.md` and loads only the minimal relevant subset of files, protecting the LLM context window from token bloat.
-2. **Canonical Knowledge Layer (`requirements/`, `decisions/`, `technical/`, `traceability/`, `alerts/`)**:
+2. **Canonical Knowledge Layer (`requirements/`, `changes/decisions/`, `technical/`, `traceability/`, `alerts/`)**:
    The structured long-term memory of the repository. Every requirement (`REQ-*`), decision (`ADR-*`), and change request (`CR-*`) has a permanent ID and explicit links to related source code paths.
 3. **Active Agent Engine (Preflight, Auto-Update, Ingestion, `sync`, `maintain`)**:
    The operational skill runtime that keeps the wiki synchronized with the codebase. It automatically reads context before coding and updates documentation after changes without requiring manual user commands.
@@ -172,38 +165,13 @@ Project Wiki is built around three distinct architectural layers:
 > [!NOTE]
 > **The Knowledge Provenance Principle**: Raw external documents (PDF, DOCX) ingested via `intake/` are treated as **provenance** (evidence), never as unreviewed canonical truth. Information becomes canonical only when classified and integrated into official wiki records. Likewise, code scanned via `sync` documents observed technical reality, while confirmed business requirements require explicit product intent.
 
-### Repository Layout
+### Skill Layout
 
-```text
-project-wiki/
-  SKILL.md
-  README.md
-  scripts/
-    ingest_document.py
-    requirements.txt
-  references/
-    document-ingestion.md
-    wiki-structure.md
-    workflows.md
-  assets/
-    document-templates.md
-```
-
-`SKILL.md` is the runtime entrypoint loaded by compatible agents.
-
-`README.md` explains the skill for humans.
-
-`scripts/ingest_document.py` extracts PDF, DOCX, text, or Markdown source documents into structured `.project-wiki/intake/` artifacts.
-
-`scripts/requirements.txt` lists optional PDF/DOCX extraction dependencies.
-
-`references/document-ingestion.md` defines document intake, chunking, generated artifacts, review gating, and KB integration rules.
-
-`references/wiki-structure.md` defines the canonical `.project-wiki/` structure, document IDs, linking rules, registry format, and placeholder policy.
-
-`references/workflows.md` defines the operational workflows for `init`, `scan`, `update`, `sync`, `maintain`, automatic context preflight, and automatic post-implementation wiki updates.
-
-`assets/document-templates.md` provides reusable Markdown and YAML templates for generated wiki files and always-on project instruction blocks.
+- `SKILL.md` is the runtime entrypoint.
+- `schema/project-wiki.yml` is the machine-readable contract.
+- `references/` owns workflow, structure, and ingestion guidance.
+- `assets/document-templates.md` routes to focused, copyable template catalogs.
+- `scripts/` provides inbox deduplication, document extraction, structural validation, and contract drift checks.
 
 ## Command Modes
 
@@ -221,7 +189,7 @@ These are hints, not a strict CLI parser. In Copilot, you can invoke the skill w
 | `scan` | Analyze an existing codebase and generate the initial wiki. |
 | `update` | Convert meeting minutes, documents, chat notes, planning notes, or new requirements into wiki updates. |
 | `sync` | Reconcile the wiki with source code changes made manually or outside the current agent chat flow. |
-| `maintain` | Audit and repair the wiki itself: links, indexes, registry entries, semantic lint, alerts, stale docs, and traceability consistency. |
+| `maintain` | Run deterministic structure validation, repair safe findings, then perform semantic lint, alert review, stale-meaning analysis, and traceability review. |
 
 You do not have to use these exact argument hints for the skill to be useful. They are invocation hints for explicit wiki-management tasks. The skill can still be selected by an agent when your request matches its description, such as asking to document requirements, update the project knowledge base, sync manual code changes, or implement code in a repository that already has `.project-wiki/`.
 
@@ -229,53 +197,14 @@ During `init` and `scan`, the skill also installs repository-level always-on ins
 
 ## Automatic Behavior
 
-Two important behaviors are automatic and should not require explicit commands.
+After initialization, ordinary coding requests do not need a wiki command:
 
-### Automatic Context Preflight
+- **Before code work**, the agent starts at `.project-wiki/INDEX.md` and follows only the smallest relevant context path.
+- **After agent-made code changes**, it updates affected technical docs, traceability, status, registry entries, and the wiki audit log.
+- **For durable answers**, it updates the owning canonical page or files a linked analysis only when the result has lasting project value.
+- **During `init` and `scan`**, it installs a marked project-wiki block in `.github/copilot-instructions.md` or `AGENTS.md` without overwriting unrelated instructions.
 
-When `.project-wiki/INDEX.md` exists and the user asks the agent to implement, modify, debug, refactor, test, document, or plan code, the agent should first consult the wiki.
-
-Expected behavior:
-
-1. Read `.project-wiki/INDEX.md`.
-2. Follow the routing table to the smallest relevant section.
-3. Read only the specific linked files needed for the task.
-4. Use `REGISTRY.yml` and traceability maps only when needed.
-5. Summarize relevant project facts briefly before acting.
-
-The user should not need to run a separate `consult` command.
-
-### Automatic Post-Implementation Wiki Update
-
-When the agent changes source code through chat, it should update the wiki before finishing.
-
-Expected behavior:
-
-1. Identify changed source paths.
-2. Update relevant technical docs.
-3. Update implementation notes if active work changed.
-4. Update traceability maps when requirements, CRs, ADRs, technical docs, or source paths are affected.
-5. Update `REGISTRY.yml`, local indexes, and `STATUS.md`.
-6. Append a wiki audit entry to `logs/wiki-log-YYYY-MM.md`.
-7. Mention the wiki files updated in the final response.
-
-The user should not need to run `sync` for code changes made by the agent itself.
-
-### Durable Answer Filing
-
-When a user question or agent answer creates durable project knowledge, the agent may file it back into the wiki. This must be selective.
-
-File the answer only when it captures lasting value, such as a tradeoff analysis, impact map, requirement clarification, resolved open question, risk analysis, or meaningful connection between requirements, CRs, ADRs, technical docs, and source paths.
-
-Prefer updating existing canonical docs when the information belongs there. Use `analysis/AN-YYYYMMDD-NNN-short-title.md` only for useful non-canonical synthesis, and only when the page links to related requirements, CRs, ADRs, technical docs, alerts, work items, intake documents, or source paths.
-
-Do not file routine chat answers, generic explanations, transient debugging notes, duplicated content, or unapproved speculation.
-
-### Always-On Project Instructions
-
-During `init` and `scan`, the agent creates or updates one repository-level instruction file outside `.project-wiki/`: `.github/copilot-instructions.md` for GitHub Copilot or VS Code Copilot, or `AGENTS.md` for non-Copilot agents.
-
-The exact marked block is maintained in [assets/document-templates.md](assets/document-templates.md). The operational rules for installing it live in [references/workflows.md](references/workflows.md#always-on-project-instruction-bootstrap).
+See [Automatic Context Preflight](references/automatic-workflows.md#automatic-context-preflight), [Automatic Post-Implementation Wiki Update](references/automatic-workflows.md#automatic-post-implementation-wiki-update), and [Always-On Project Instruction Bootstrap](references/automatic-workflows.md#always-on-project-instruction-bootstrap) for the full procedures.
 
 ## Generated Wiki
 
@@ -289,10 +218,11 @@ The complete structure is always created. Files that are not useful yet can rema
 |-- PROJECT.md            # Project vision, core constraints, and stack
 |-- STATUS.md             # Current milestone, active work, and blockers
 |-- REGISTRY.yml          # Machine-readable catalog of all wiki documents
-|-- WIKI_VERSION.yml      # Applied schema version tracker (e.g., 1.3.0)
+|-- WIKI_VERSION.yml      # Applied schema version tracker
 |-- requirements/         # Functional and non-functional specifications
-|-- changes/              # Agile Change Requests (CRs) and changelog
-|-- decisions/            # Architectural Decision Records (ADRs)
+|-- changes/
+|   |-- requests/         # Agile Change Requests (CRs)
+|   `-- decisions/        # Architectural Decision Records (ADRs)
 |-- technical/            # System architecture and component technical docs
 |-- implementation/       # Work breakdowns, scans, and sync reports
 |-- traceability/         # Requirement-to-code traceability matrices
@@ -300,81 +230,100 @@ The complete structure is always created. Files that are not useful yet can rema
 |   `-- inbox/            # Drop zone for external raw documents
 |-- intake/               # Extracted artifacts and chunks from ingested docs
 |-- analysis/             # Deep-dive trade-offs and multi-record syntheses
-|-- maintenance/          # Semantic lint and wiki health reports
+|-- maintenance/          # Structural validation and semantic health reports
 |-- alerts/               # Active warnings, risks, and unresolved conflicts
 `-- logs/                 # Chronological audit log of knowledge base edits
 ```
 
-The canonical tree, frontmatter, ID conventions, registry shape, statuses, and linking rules live in [references/wiki-structure.md](references/wiki-structure.md). The always-on instruction file lives outside `.project-wiki/`.
+The machine-readable tree, frontmatter fields, ID patterns, registry versions, and status domains live in [schema/project-wiki.yml](schema/project-wiki.yml). Their human-readable explanation lives in [references/wiki-structure.md](references/wiki-structure.md), and CI verifies the two remain aligned. The always-on instruction file lives outside `.project-wiki/`.
 
 ## Core Indexing Model
 
-The wiki uses three levels of navigation.
+Navigation has three levels: root `INDEX.md`, section indexes, then focused records. `REGISTRY.yml` provides the machine-readable catalog, while `WIKI_VERSION.yml` records the applied version from the schema manifest.
 
-`INDEX.md` is the human and agent routing map. It should stay short and answer: "What should I open for this task?"
+| Area | Responsibility |
+| --- | --- |
+| `requirements/` | Explicit product intent, constraints, and open questions |
+| `changes/` | Change requests, ADRs, and project changelog |
+| `technical/` | Observed and implemented architecture, APIs, data, tests, deployment, and security |
+| `implementation/` | Current plans, work items, scans, and sync reports |
+| `traceability/` | Links among requirements, decisions, documentation, and source paths |
+| `sources/` and `intake/` | Raw documents and immutable extraction provenance |
+| `analysis/`, `alerts/`, `maintenance/` | Durable synthesis, active risks, structural validation, and semantic lint |
+| `logs/` | Append-only audit history for wiki changes |
 
-`WIKI_VERSION.yml` records which project-wiki schema version is applied to the repository. Current schema version: `1.3.0`.
-
-`REGISTRY.yml` is the structured document catalog. It stores document IDs, paths, statuses, tags, related IDs, source paths, and confidence levels.
-
-Section indexes such as `requirements/INDEX.md` and `technical/INDEX.md` route agents inside a specific area.
-
-Requirements use dynamic topic scaling: `functional-requirements.md` and `non-functional-requirements.md` stay as overview/routing files, while project-specific topic files under `requirements/functional/` or `requirements/non-functional/` are created only when stable requirement areas grow enough to improve retrieval and traceability.
-
-Requirements capture explicit business or product intent. Implemented or observed code behavior is documented under `technical/`; it becomes a confirmed requirement only when an explicit product-intent source supports it.
-
-`logs/wiki-log-YYYY-MM.md` records meaningful edits to the knowledge base itself. This is different from `changes/CHANGELOG.md`, which records project-level changes.
-
-`intake/` stores external source document extraction artifacts. Intake is provenance, not canonical project knowledge. Agents should use it during document-based updates, audits, provenance checks, or conflict investigation, then integrate accepted information into canonical KB files.
-
-`analysis/` stores durable non-canonical synthesis. These pages must be linked to relevant wiki records or source paths and should not become isolated notes.
-
-`maintenance/` stores semantic lint and wiki health reports.
-
-`alerts/` stores warning records for significant risks, conflicts, blocking gaps, and dangerous assumptions. Alerts are resolved or dismissed with evidence, not deleted.
-
-Agents should not load the entire wiki by default. They should move from root index to section index to specific documents.
+Agents move progressively from indexes to records instead of loading the whole knowledge base. Product intent stays in requirements; code-observed behavior stays technical until an explicit source confirms it as intent.
 
 ## Document Intake
 
 Document intake is used when `/project-wiki update` receives an external requirements document, finds a new file in `.project-wiki/sources/inbox/`, or receives a retrievable local document path.
 
-PDF and DOCX sources are never read directly into model context. The agent runs [scripts/ingest_document.py](scripts/ingest_document.py), then reviews generated `intake/` artifacts.
+For source inbox files, the agent first runs the deterministic preflight. It processes new unique content, skips byte-identical inbox or historical duplicates found in the registry or prior intake records, and requests semantic review only when a historical path contains changed bytes.
 
 ```bash
-python3 /path/to/project-wiki/scripts/ingest_document.py requirements.pdf \
-  --wiki-root .project-wiki
+python3 /path/to/project-wiki/scripts/check_inbox.py \
+  --wiki-root .project-wiki \
+  --format json \
+  --quarantine-skips
 ```
 
-Text and Markdown extraction use the Python standard library. PDF and DOCX support require the optional dependencies:
+PDF and DOCX sources are never read directly into model context. After preflight authorization, the agent runs [scripts/ingest_document.py](scripts/ingest_document.py), then reviews generated `intake/` artifacts.
+
+```bash
+python3 /path/to/project-wiki/scripts/ingest_document.py \
+  .project-wiki/sources/inbox/requirements.pdf \
+  --wiki-root .project-wiki \
+  --expected-sha256 <sha256-from-checker>
+```
+
+Source inbox registry checks and wiki validation require PyYAML; wiki link and heading validation also requires markdown-it-py. PDF and DOCX extraction additionally requires PyMuPDF and python-docx. Install the helper dependencies with:
 
 ```bash
 python3 -m pip install -r /path/to/project-wiki/scripts/requirements.txt
 ```
 
-The canonical intake workflow, supported formats, chunking behavior, direct-update vs `review.md` gating, intake statuses, and `review.md` shape live in [references/document-ingestion.md](references/document-ingestion.md). The workflow entrypoints and source inbox procedure live in [references/workflows.md](references/workflows.md#source-inbox-workflow).
+The intake workflow, supported formats, chunking behavior, review gating, and status semantics live in [references/document-ingestion.md](references/document-ingestion.md). The complete `review.md` body lives in [assets/intake-source-templates.md](assets/intake-source-templates.md#document-intake-review), while source inbox actions live in [references/update-workflows.md](references/update-workflows.md#source-inbox-workflow).
 
-Each intake document contains provenance in `source-info.yml`, routing in `intake-report.md`, a lightweight `chunks.json` manifest, progressively readable files under `chunks/`, and the full extraction in `extracted.md`.
+Each intake document contains provenance in `source-info.yml`, routing in `intake-report.md`, a lightweight `chunks.json` manifest, exhaustive review coverage in `review-progress.yml`, progressively readable full-text files under `chunks/`, and a lightweight extraction index in `extracted.md`.
 
-For large documents, agents open chunk files progressively until the requested integration has classified all relevant information. Intake remains provenance until accepted information is integrated into canonical KB files.
+For large documents, agents process every manifest chunk in batches. Hints may prioritize order but never exclude chunks. Every chunk must be classified or skipped with a reason in `review-progress.yml`; integrated classifications must link to registered wiki IDs.
+
+## Deterministic Governance
+
+| Helper | Purpose |
+| --- | --- |
+| `check_inbox.py` | Hashes inbox documents, detects historical/current duplicates, and returns `process`, `skip`, or `review` |
+| `review_progress.py` | Selects the next incomplete chunk batch and atomically updates exhaustive review coverage |
+| `validate_wiki.py` | Validates tree, YAML/JSON, frontmatter, IDs, registries, paths, links, anchors, and intake artifacts |
+| `check_contracts.py` | Prevents drift among the manifest, README, workflows, templates, and CI-bound documentation |
+
+`maintain` runs structural validation before agent-assisted semantic lint. Deterministic tools establish facts; the agent handles meaning-dependent questions such as contradictions, implicit requirements, stale claims, and traceability quality.
 
 ## Documentation
 
-The README is an orientation guide. Canonical details live in the reference files:
+The README is an orientation guide. The manifest is canonical for machine-readable schema values; reference files explain the workflows and policies:
 
-| Need | Canonical source |
+| Need | Source |
 | --- | --- |
-| Folder tree, frontmatter, IDs, registry, linking, statuses | [references/wiki-structure.md](references/wiki-structure.md) |
-| Mode workflows, automatic preflight/update, source inbox, sync, maintain, logs | [references/workflows.md](references/workflows.md) |
+| Machine schema version, tree, frontmatter fields, statuses, and ID patterns | [schema/project-wiki.yml](schema/project-wiki.yml) |
+| Human structure, registry, linking, and lifecycle policy | [references/wiki-structure.md](references/wiki-structure.md) |
+| Workflow routing by mode or automatic trigger | [references/workflows.md](references/workflows.md) |
+| Automatic context, initialization, update/intake, sync, and maintenance procedures | [references/automatic-workflows.md](references/automatic-workflows.md), [references/initialization-workflows.md](references/initialization-workflows.md), [references/update-workflows.md](references/update-workflows.md), [references/synchronization-workflow.md](references/synchronization-workflow.md), [references/maintenance-workflows.md](references/maintenance-workflows.md) |
 | External document intake, chunking, direct update vs `review.md`, review shape | [references/document-ingestion.md](references/document-ingestion.md) |
-| Generated document bodies and always-on instruction block | [assets/document-templates.md](assets/document-templates.md) |
+| Template routing by artifact family | [assets/document-templates.md](assets/document-templates.md) |
+| Copyable core, requirement/change, technical/implementation, intake/source, and governance templates | [assets/core-templates.md](assets/core-templates.md), [assets/requirements-change-templates.md](assets/requirements-change-templates.md), [assets/technical-implementation-templates.md](assets/technical-implementation-templates.md), [assets/intake-source-templates.md](assets/intake-source-templates.md), [assets/governance-templates.md](assets/governance-templates.md) |
+| Documentation and template drift checks | [scripts/check_contracts.py](scripts/check_contracts.py) |
+| Source inbox duplicate preflight and CLI options | [scripts/check_inbox.py](scripts/check_inbox.py) |
 | Extraction implementation and CLI options | [scripts/ingest_document.py](scripts/ingest_document.py) |
+| Deterministic wiki structure validation and CLI options | [scripts/validate_wiki.py](scripts/validate_wiki.py) |
 
 ## Compatibility And Scope
 
 Project Wiki is a portable instruction-based skill rather than a hosted service. It can be installed personally or committed with a repository, and the generated knowledge remains plain Markdown and YAML inside the target project.
 
 The skill can be selected explicitly through the five command modes or implicitly when a compatible agent recognizes a project-wiki task. Exact invocation syntax depends on the host agent; the workflow and generated wiki remain the same.
+
+Plain wiki reading and writing can remain Markdown-only. Deterministic inbox, validation, contract, and document-intake workflows require Python plus `scripts/requirements.txt`; PDF and DOCX extraction additionally use PyMuPDF and python-docx.
 
 During `init` and `scan`, the skill also creates or updates the repository-level always-on instruction file:
 
@@ -393,61 +342,21 @@ Bug reports, design discussions, and pull requests are warmly welcome!
 - Review our [Code of Conduct](CODE_OF_CONDUCT.md) for community standards.
 - Review our [Security Policy](SECURITY.md) to report vulnerabilities responsibly.
 
-Before submitting changes, run the ingestion smoke check:
+Before submitting changes, run:
 
 ```bash
-python3 scripts/ingest_document.py --help
+python3 -m unittest discover -s tests -v
+python3 scripts/check_contracts.py
 ```
 
 ## Design Principles
 
-### Context & Token Efficiency
-- **Progressive disclosure**: Keep the wiki comprehensive, but load only minimal relevant records via `INDEX.md`.
-- **Intake as provenance**: Keep raw external document extractions separate from canonical wiki docs.
-- **Link over duplication**: Reference stable document IDs rather than repeating long explanations.
-
-### Knowledge Integrity & Traceability
-- **Stable IDs over titles**: Use unambiguous identifiers (`REQ-*`, `ADR-*`, `CR-*`) for reliable linking.
-- **Intent vs. Observation**: Preserve explicit product intent separately from observed code behavior.
-- **Explicit uncertainty**: Mark gaps, assumptions, and conflicts as open questions or alerts rather than guessing.
-- **Agile change tracking**: Record scope modifications through lightweight Change Requests (CRs).
-
-### Automation & Agent Lifecycle
-- **Zero-friction updates**: Update affected wiki records automatically after agent-made code edits.
-- **External reconciliation**: Use `sync` to reconcile documentation when source code changes outside chat.
-- **Continuous maintenance**: Use `maintain` to audit broken links, stale references, and schema health.
-- **Always-on instructions**: Install repository instructions during `init` and `scan` to ensure continuous agent adoption.
-
-### Governance & Auditing
-- **Active semantic linting**: Detect contradictions, stale claims, and unsupported code assumptions.
-- **Alert resolution with evidence**: Track significant risks as alerts; resolve or dismiss them with evidence, never silent deletion.
-- **Parseable audit logs**: Record meaningful knowledge base changes in structured monthly logs (`logs/wiki-log-YYYY-MM.md`).
-
-## FAQ
-
-### Is Project Wiki a hosted service?
-
-No. It is an agent skill and a repository-local documentation convention. The generated knowledge base is plain Markdown and YAML under `.project-wiki/`.
-
-### Does the agent load the whole wiki on every request?
-
-No. Progressive disclosure is the core retrieval model. The agent starts with `INDEX.md` and follows only the links relevant to the current task.
-
-### What is the difference between `sync` and `maintain`?
-
-Use `sync` when source code changed and the wiki must be reconciled with code reality. Use `maintain` when the wiki itself needs schema migration, link repair, registry repair, semantic lint, alert review, or stale-document cleanup.
-
-### Does scanned code automatically become a requirement?
-
-No. Scanned code establishes observed or inferred technical behavior. It becomes a confirmed requirement only when an explicit product-intent source supports it; otherwise the gap belongs in an open question.
-
-### Can it ingest large requirements documents?
-
-Yes. Intake documents are chunked, indexed, and reviewed progressively. The source remains provenance until accepted information is integrated into canonical wiki records.
-
-### Do I need Python to use the skill?
-
-Not for the core Markdown workflow. Python is needed only for the document extraction helper. PDF and DOCX extraction also require the packages in `scripts/requirements.txt`.
+- **Progressive disclosure**: load only the records needed for the current task.
+- **Single source per fact**: define machine contracts once and link to them from explanatory docs.
+- **Intent vs. observation**: keep explicit product intent separate from code-observed behavior.
+- **Provenance before canon**: integrate reviewed source information; do not treat extraction as truth.
+- **Stable traceability**: connect durable IDs to decisions, docs, tests, and source paths.
+- **Explicit uncertainty and evidence**: track open questions and alerts; resolve rather than delete them.
 
 ## License
 

@@ -1,128 +1,10 @@
 # Project Wiki Structure
 
-Current schema version: `1.3.0`.
+The canonical machine-readable contract is [`schema/project-wiki.yml`](../schema/project-wiki.yml). This reference explains the responsibilities, linking rules, and lifecycle policies behind that contract. Create the full structure for every project; unused files may remain empty with `status: placeholder` until they become useful.
 
-This reference defines the canonical `.project-wiki/` structure. Create the full structure for every project; unused files may remain empty with `status: placeholder` until they become useful.
+## Contract Routing
 
-## Canonical Tree
-
-```text
-.project-wiki/
-  INDEX.md
-  WIKI_VERSION.yml
-  REGISTRY.yml
-  STATUS.md
-  PROJECT.md
-  GLOSSARY.md
-
-  requirements/
-    INDEX.md
-    product-brief.md
-    functional-requirements.md
-    non-functional-requirements.md
-    functional/
-      <project-topic>.md
-    non-functional/
-      <project-topic>.md
-    constraints.md
-    open-questions.md
-
-  changes/
-    INDEX.md
-    CHANGELOG.md
-    requests/
-      CR-YYYYMMDD-001-short-title.md
-    decisions/
-      ADR-0001-short-title.md
-
-  technical/
-    INDEX.md
-    architecture.md
-    codebase-map.md
-    modules/
-      module-name.md
-    api/
-      api-name.md
-    data/
-      data-model.md
-    integrations/
-      integration-name.md
-    testing.md
-    deployment.md
-    security.md
-
-  implementation/
-    INDEX.md
-    current-plan.md
-    work-items/
-      WI-YYYYMMDD-001-short-title.md
-    scans/
-      scan-YYYYMMDD.md
-      sync-YYYYMMDD-001.md
-
-  traceability/
-    INDEX.md
-    requirement-map.md
-    change-impact-map.md
-    code-map.md
-
-  analysis/
-    INDEX.md
-    AN-YYYYMMDD-001-short-title.md
-
-  maintenance/
-    INDEX.md
-    lint-YYYYMMDD.md
-    schema-migration-YYYYMMDD.md
-
-  alerts/
-    INDEX.md
-    ALERT-YYYYMMDD-001-short-title.md
-
-  intake/
-    INDEX.md
-    documents/
-      DOCIN-YYYYMMDD-001/
-        source-info.yml
-        extracted.md
-        chunks.json
-        chunks/
-          CH-001.md
-        intake-report.md
-        review.md
-
-  sources/
-    INDEX.md
-    SOURCE_REGISTRY.yml
-    inbox/
-    processed/
-      YYYY-MM/
-    rejected/
-    ignored/
-
-  logs/
-    INDEX.md
-    wiki-log-YYYY-MM.md
-
-  templates/
-    requirement.md
-    change-request.md
-    adr.md
-    module-doc.md
-    api-doc.md
-    analysis.md
-    alert.md
-    source-index.md
-    source-registry.yml
-    document-intake-index.md
-    document-intake-review.md
-    maintenance-lint.md
-    schema-migration.md
-    scan-report.md
-    sync-report.md
-    work-item.md
-    wiki-log.md
-```
+Use [`schema/project-wiki.yml`](../schema/project-wiki.yml) for exact tree entries, frontmatter fields, document types, status domains, confidence values, ID patterns, generated values, and artifact names. This reference explains the meaning and lifecycle of those structures without duplicating their complete machine-readable definitions.
 
 ## Root Files
 
@@ -142,14 +24,7 @@ This reference defines the canonical `.project-wiki/` structure. Create the full
 
 Every project wiki must include `.project-wiki/WIKI_VERSION.yml`.
 
-```yaml
-schema: project-wiki
-schema_version: 1.3.0
-schema_updated: 2026-07-23
-last_migrated: YYYY-MM-DD
-maintained_by_skill: project-wiki
-notes: Current schema applied.
-```
+Use the complete [WIKI_VERSION.yml template](../assets/core-templates.md#wiki_versionyml). Exact schema values come from the machine-readable manifest.
 
 During `maintain`, compare `schema_version` with the current schema version declared in this reference. If the file is missing, treat the wiki as `pre-versioned` and run Schema Migration Workflow. Migration must preserve existing content and log changes.
 
@@ -172,6 +47,8 @@ Product intent comes from explicit business, user, stakeholder, meeting, issue, 
 `analysis/` stores durable, non-canonical synthesis produced from meaningful user questions or agent analysis. Prefer updating existing canonical docs when the information belongs there. Use one analysis page per durable synthesis and keep `analysis/INDEX.md` as routing only. Every analysis page must link to related wiki records or source paths.
 
 `maintenance/` stores semantic lint and wiki health reports. These reports may identify contradictions, stale claims, orphan pages, missing source material, risky assumptions, and suggested follow-up questions.
+
+Deterministic structural health is checked by `scripts/validate_wiki.py` before semantic lint. The validator owns canonical tree, YAML/JSON, frontmatter, ID, status, registry, path, link, anchor, and intake-manifest checks. Agent-assisted maintenance owns meaning-dependent judgments such as contradictions, implicit requirements, stale claims, meaningful backlinks, traceability adequacy, orphan concepts, risky assumptions, and missing source material.
 
 `alerts/` stores active and resolved warning records for significant gaps, conflicts, risks, and inconsistencies. Alerts are not deleted when resolved; they are closed with resolution evidence.
 
@@ -230,11 +107,11 @@ confidence: confirmed
 ---
 ```
 
-Allowed `status` values: `active`, `draft`, `placeholder`, `superseded`, `deprecated`, `blocked`, `resolved`.
+Default document statuses are `active`, `draft`, `placeholder`, `superseded`, `deprecated`, `blocked`, and `resolved`.
 
-Alert records may also use `open`, `dismissed`, or `accepted-risk`.
+Alert records use `open`, `resolved`, `dismissed`, or `accepted-risk`.
 
-Open question records may use `open`, `partially-resolved`, `resolved`, `superseded`, `dismissed`, or `duplicate`.
+Open question records use `open`, `partially-resolved`, `resolved`, `superseded`, `dismissed`, or `duplicate`.
 
 Allowed `confidence` values: `confirmed`, `inferred`, `unknown`.
 
@@ -242,30 +119,13 @@ Use `confidence: inferred` for scan results that come from code structure but ha
 
 ## ID Conventions
 
-Use stable IDs and never reuse deleted IDs.
+Use stable IDs and never reuse deleted IDs. Exact regexes, examples, embedded-record families, and generation settings live under `id_patterns`, `id_examples`, and `id_generation` in [`schema/project-wiki.yml`](../schema/project-wiki.yml).
 
 ```text
 REQ-001      Functional requirement
-NFR-001      Non-functional requirement
-REQ-TOPIC-YYYYMMDD-001  Requirement topic document
-CON-001      Constraint
-OQ-001       Open question
-CR-YYYYMMDD-001  Lightweight change request or scope change
+CR-YYYYMMDD-001  Change request
 ADR-0001     Architecture decision record
-MOD-001      Module documentation
-API-001      API documentation
-DATA-001     Data model documentation
-INT-001      Integration documentation
-AN-YYYYMMDD-001  Durable non-canonical analysis
-ALERT-YYYYMMDD-001  Active or resolved alert
 DOCIN-YYYYMMDD-001  Document intake record
-DOCIN-YYYYMMDD-001-CH-001  Document intake chunk
-SRC-YYYYMMDD-001  Raw source document record
-WI-YYYYMMDD-001  Work item
-SCAN-YYYYMMDD    Codebase scan report
-SYNC-YYYYMMDD-001  Manual code change synchronization report
-LINT-YYYYMMDD  Semantic maintenance lint report
-MIGRATION-YYYYMMDD  Schema migration report
 WLOG-YYYYMMDD-001  Wiki audit log entry
 ```
 
@@ -315,6 +175,20 @@ documents:
 
 For files that contain multiple IDs, registry paths may point to anchors. For one-record-per-file documents, paths should point to the file.
 
+For stable embedded-record anchors, place an explicit lowercase HTML anchor immediately before the record heading and use that fragment in `REGISTRY.yml`:
+
+```markdown
+<a id="req-001"></a>
+
+## REQ-001 - User authentication
+```
+
+```yaml
+path: requirements/functional/authentication.md#req-001
+```
+
+The deterministic validator verifies that a registry fragment exists and identifies the same record ID, rather than merely another anchor in the file.
+
 ## INDEX.md Routing Standard
 
 Root `INDEX.md` must include:
@@ -337,18 +211,7 @@ Each section `INDEX.md` must include:
 
 `intake/` stores document extraction artifacts for provenance. Do not route normal coding tasks into intake documents.
 
-Allowed intake statuses:
-
-```text
-active      imported and not fully reviewed
-reviewed    review.md exists and awaits user decision
-integrated  accepted content has been merged into the canonical KB
-archived    retained only for provenance
-superseded  replaced by a newer source document
-rejected    not relevant, not accepted, or invalid as a source
-```
-
-Use [Document ingestion](./document-ingestion.md) for extraction, chunk review, direct-update vs `review.md`, and intake lifecycle rules.
+Status values are defined in the schema manifest. Use [Document ingestion](./document-ingestion.md#intake-status) for lifecycle meaning, extraction, chunk review, and direct-update vs `review.md` rules.
 
 ## Source Document Policy
 
@@ -361,24 +224,15 @@ sources/rejected/   files that should not be integrated
 sources/ignored/    files intentionally skipped
 ```
 
-Use `SOURCE_REGISTRY.yml` to avoid duplicate processing. Track source ID, status, original path, current path, filename, SHA-256 hash, related intake ID, processed date, tags, and notes.
+Use `SOURCE_REGISTRY.yml` with the deterministic `scripts/check_inbox.py` preflight to avoid duplicate processing. Track source ID, status, original path, current path, filename, SHA-256 hash, related intake ID, processed date, tags, and notes. The preflight cross-checks registry entries with complete intake history, so stale source status does not silently authorize reingestion. Byte-identical duplicate classification, retry-record selection, and skip quarantine are script responsibilities; semantic review is required only when a historical path contains new bytes, processable registry history is ambiguous, or the user explicitly requests reprocessing.
 
-Allowed source statuses:
+A `processed` source record must include a valid `processed_at` date and `intake_id`. Its archived `current_path` bytes, registry SHA-256, intake `source-info.yml`, and intake `chunks.json` source hash must agree. The validator and inbox preflight fail closed when this provenance chain is incomplete or inconsistent.
 
-```text
-pending     discovered in inbox but not yet processed
-processed   ingested and linked to a DOCIN-* record
-failed      ingestion failed
-rejected    source is invalid or should not be used
-ignored     intentionally skipped
-superseded  replaced by a newer source
-```
-
-Use [Source Inbox Workflow](./workflows.md#source-inbox-workflow) for discovery, processing, movement, and registry updates.
+Source status values are defined in the schema manifest. Use [Source Inbox Workflow](./update-workflows.md#source-inbox-workflow) for their operational transitions, discovery, processing, movement, and registry updates.
 
 ## Durable Analysis Policy
 
-Use `analysis/AN-YYYYMMDD-NNN-short-title.md` for meaningful non-canonical synthesis that should remain discoverable. Every analysis page must link to related requirements, CRs, ADRs, technical docs, alerts, work items, intake documents, or source paths. Use [Durable Answer Filing Workflow](./workflows.md#durable-answer-filing-workflow) for filing rules.
+Use `analysis/AN-YYYYMMDD-NNN-short-title.md` for meaningful non-canonical synthesis that should remain discoverable. Every analysis page must link to related requirements, CRs, ADRs, technical docs, alerts, work items, intake documents, or source paths. Use [Durable Answer Filing Workflow](./update-workflows.md#durable-answer-filing-workflow) for filing rules.
 
 ## Alert Policy
 
@@ -401,11 +255,11 @@ open -> dismissed
 open -> accepted-risk
 ```
 
-Use [Alert Workflow](./workflows.md#alert-workflow) for creation and resolution rules.
+Use [Alert Workflow](./maintenance-workflows.md#alert-workflow) for creation and resolution rules.
 
 ## Suggested Discovery Policy
 
-Suggested follow-up questions, missing source material, and risky assumptions are discovery aids, not automatic tasks. Use [Semantic Lint Workflow](./workflows.md#semantic-lint-workflow) and [Document ingestion](./document-ingestion.md#direct-update-vs-reviewmd) for promotion rules.
+Suggested follow-up questions, missing source material, and risky assumptions are discovery aids, not automatic tasks. Use [Semantic Lint Workflow](./maintenance-workflows.md#semantic-lint-workflow) and [Document ingestion](./document-ingestion.md#direct-update-vs-reviewmd) for promotion rules.
 
 ## Open Questions Policy
 
@@ -433,7 +287,7 @@ Each open question entry should include:
 - Resolution or partial resolution notes.
 - Resolution evidence when applicable.
 
-Use [Open Questions Reconciliation Workflow](./workflows.md#open-questions-reconciliation-workflow) for update and logging rules.
+Use [Open Questions Reconciliation Workflow](./update-workflows.md#open-questions-reconciliation-workflow) for update and logging rules.
 
 ## Wiki Audit Log
 
@@ -491,6 +345,8 @@ No project-specific security documentation has been captured yet.
 
 ## Quality Rules
 
+- Run `scripts/validate_wiki.py --wiki-root .project-wiki --format json` during every `maintain` after schema migration and before semantic lint.
+- Treat deterministic validator findings as authoritative structural facts; repair and rerun instead of reproducing those checks through model reasoning.
 - Keep root and section indexes concise.
 - Do not duplicate long explanations across files; link instead.
 - When new notes conflict with existing wiki content, preserve history and record the change rather than silently rewriting the past.

@@ -6,8 +6,8 @@ Security updates and fixes are applied to the latest schema version of Project W
 
 | Version / Schema | Supported |
 | :--- | :--- |
-| `1.3.x` (Current) | :white_check_mark: |
-| `< 1.3.0` | :x: (Please migrate using `/project-wiki maintain`) |
+| `1.4.x` (Current) | :white_check_mark: |
+| `< 1.4.0` | :x: (Please migrate using `/project-wiki maintain`) |
 
 ---
 
@@ -20,10 +20,10 @@ Key security aspects relevant to Project Wiki:
 1. **Document Ingestion (`scripts/ingest_document.py`)**:
    - The extraction helper parses local PDF, DOCX, TXT, and Markdown files into `.project-wiki/intake/`.
    - It handles file paths safely to prevent arbitrary path traversal or accidental overwriting of files outside `.project-wiki/`.
-   - It relies on standard and vetted open-source parsing libraries (`pypdf`, `python-docx`).
+   - It relies on standard and vetted open-source parsing libraries (`PyMuPDF`, `python-docx`).
 
 2. **Always-On Instructions (`AGENTS.md`, `.github/copilot-instructions.md`)**:
-   - The skill injects bounded, marked blocks (`<!-- PROJECT-WIKI:START -->`) into project instruction files. It preserves all pre-existing user instructions.
+   - The skill injects bounded, marked blocks (`<!-- PROJECT-WIKI:BEGIN -->`) into project instruction files. It preserves all pre-existing user instructions.
 
 3. **Prompt Injection & Provenance Defense**:
    - By design, raw external documents in `.project-wiki/intake/` are treated as **provenance** and are not automatically fed verbatim into the agent's active system context, mitigating indirect prompt injection risks from untrusted external documents.

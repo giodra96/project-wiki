@@ -6,13 +6,20 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import sys
+import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from pathlib import Path
-from typing import Iterable
+from pathlib import Path, PurePosixPath
+from typing import Any, Iterable
+
+try:
+    from .schema_contract import SchemaContract, SchemaContractError, load_schema_contract
+except ImportError:
+    from schema_contract import SchemaContract, SchemaContractError, load_schema_contract  # type: ignore[no-redef]
 
 
 SUPPORTED_SUFFIXES = {".pdf", ".docx", ".txt", ".md", ".markdown"}
@@ -33,11 +40,13 @@ class TextBlock:
     text: str
     heading: str | None = None
     page: int | None = None
+    starts_section: bool = False
 
 
 @dataclass(frozen=True)
 class Chunk:
     id: str
+    text_path: str
     sequence: int
     heading: str | None
     page_start: int | None
@@ -77,11 +86,21 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Copy the source file into the intake document directory as source.<ext>.",
     )
+    parser.add_argument(
+        "--expected-sha256",
+        help="Require the source to match the SHA-256 authorized by the inbox preflight.",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
+    try:
+        contract = load_schema_contract()
+    except SchemaContractError as error:
+        print(f"error: invalid schema contract: {error}", file=sys.stderr)
+        return 2
+    artifacts = contract.intake_artifacts
     source = Path(args.source).expanduser().resolve()
     if not source.exists() or not source.is_file():
         print(f"error: source file not found: {source}", file=sys.stderr)
@@ -97,56 +116,187 @@ def main() -> int:
         print("error: --max-words must be at least 80", file=sys.stderr)
         return 2
 
-    wiki_root = Path(args.wiki_root).expanduser().resolve()
-    intake_root = wiki_root / "intake"
-    documents_root = intake_root / "documents"
-    documents_root.mkdir(parents=True, exist_ok=True)
+    expected_source_hash = args.expected_sha256.lower() if args.expected_sha256 else None
+    if expected_source_hash is not None and not re.fullmatch(r"[0-9a-f]{64}", expected_source_hash):
+        print("error: --expected-sha256 must be a 64-character hexadecimal SHA-256", file=sys.stderr)
+        return 2
 
-    doc_id = args.doc_id or next_doc_id(documents_root)
-    if not re.fullmatch(r"DOCIN-\d{8}-\d{3}", doc_id):
+    wiki_root = Path(args.wiki_root).expanduser().resolve()
+    documents_root = wiki_root / contract.semantic_paths.intake_documents_directory
+
+    doc_id = args.doc_id or next_doc_id(documents_root, contract)
+    if contract.type_id_patterns["intake-document"].fullmatch(doc_id) is None:
         print("error: --doc-id must match DOCIN-YYYYMMDD-NNN", file=sys.stderr)
         return 2
 
     title = args.title or source.stem.replace("_", " ").replace("-", " ").strip().title()
-    created = datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
+    created = datetime.now(timezone.utc).astimezone().date().isoformat()
     doc_dir = documents_root / doc_id
-    doc_dir.mkdir(parents=True, exist_ok=False)
+    if doc_dir.exists():
+        print(f"error: intake document already exists: {doc_id}", file=sys.stderr)
+        return 2
+
+    snapshot_root: Path | None = None
+    try:
+        snapshot_root = Path(tempfile.mkdtemp(prefix="project-wiki-source-"))
+        snapshot_path = snapshot_root / f"source{suffix}"
+        source_hash = snapshot_source(source, snapshot_path)
+    except OSError as error:
+        if snapshot_root is not None and snapshot_root.exists():
+            shutil.rmtree(snapshot_root)
+        print(f"error: failed to snapshot source document: {error}", file=sys.stderr)
+        return 5
 
     try:
-        blocks = extract_blocks(source)
-    except MissingDependencyError as error:
-        print(f"error: {error}", file=sys.stderr)
-        return 3
+        if expected_source_hash is not None and source_hash != expected_source_hash:
+            print("error: source SHA-256 does not match the inbox preflight; run check_inbox.py again", file=sys.stderr)
+            return 6
 
-    if not blocks or not any(block.text.strip() for block in blocks):
-        print("error: no extractable text found. Scanned PDFs may require OCR, which is not supported in V1.", file=sys.stderr)
-        return 4
+        try:
+            blocks = extract_blocks(snapshot_path)
+        except MissingDependencyError as error:
+            print(f"error: {error}", file=sys.stderr)
+            return 3
 
-    chunks = build_chunks(doc_id, blocks, args.max_words)
-    source_hash = sha256_file(source)
-    copied_source_path = copy_source(source, doc_dir) if args.copy_source else None
+        if not blocks or not any(block.text.strip() for block in blocks):
+            print("error: no extractable text found. Scanned PDFs may require OCR, which is not supported in V1.", file=sys.stderr)
+            return 4
 
-    write_source_info(
-        path=doc_dir / "source-info.yml",
-        doc_id=doc_id,
-        title=title,
-        source=source,
-        source_hash=source_hash,
-        copied_source_path=copied_source_path,
-        created=created,
-        file_type=suffix.lstrip("."),
-        word_count=sum(chunk.word_count for chunk in chunks),
-        chunk_count=len(chunks),
-    )
-    write_chunk_files(doc_dir / "chunks", doc_id, title, source, created, chunks)
-    write_extracted_markdown(doc_dir / "extracted.md", doc_id, title, source, created, blocks, chunks)
-    write_chunks_json(doc_dir / "chunks.json", doc_id, title, source, source_hash, created, args.max_words, chunks)
-    write_intake_report(doc_dir / "intake-report.md", doc_id, title, source, created, chunks)
-    ensure_intake_index(intake_root / "INDEX.md", doc_id, title, source)
+        if sha256_file(snapshot_path) != source_hash:
+            print("error: source snapshot changed during extraction", file=sys.stderr)
+            return 6
+
+        chunks = build_chunks(doc_id, blocks, args.max_words, contract)
+        try:
+            documents_root.mkdir(parents=True, exist_ok=True)
+            staging_dir = Path(tempfile.mkdtemp(prefix=f".{doc_id}-", dir=documents_root))
+        except OSError as error:
+            print(f"error: failed to create intake staging area for {doc_id}: {error}", file=sys.stderr)
+            return 5
+
+        published = False
+        completed = False
+        try:
+            staged_source_path = (
+                copy_source(snapshot_path, staging_dir, artifacts.copied_source_stem)
+                if args.copy_source
+                else None
+            )
+            copied_source_path = doc_dir / staged_source_path.name if staged_source_path else None
+
+            write_source_info(
+                path=staging_dir / artifacts.source_info,
+                doc_id=doc_id,
+                title=title,
+                source=source,
+                source_hash=source_hash,
+                copied_source_path=copied_source_path,
+                created=created,
+                file_type=suffix.lstrip("."),
+                word_count=sum(chunk.word_count for chunk in chunks),
+                chunk_count=len(chunks),
+                status=required_generated_status(contract, "intake-document"),
+                artifact_version=contract.intake_source_info_version,
+                confidence=contract.generated_values["intake_confidence"],
+            )
+            write_chunk_files(
+                staging_dir / artifacts.chunk_directory,
+                doc_id,
+                title,
+                source,
+                created,
+                chunks,
+                status=required_generated_status(contract, "intake-chunk"),
+                confidence=contract.generated_values["intake_confidence"],
+            )
+            write_extracted_markdown(
+                staging_dir / artifacts.extraction_index,
+                doc_id,
+                title,
+                source,
+                created,
+                blocks,
+                chunks,
+                status=required_generated_status(contract, "intake-extraction-index"),
+                artifacts=artifacts,
+                confidence=contract.generated_values["intake_confidence"],
+            )
+            write_chunks_json(
+                staging_dir / artifacts.chunks_manifest,
+                doc_id,
+                title,
+                source,
+                source_hash,
+                created,
+                args.max_words,
+                chunks,
+                artifact_version=contract.intake_chunks_manifest_version,
+                artifacts=artifacts,
+            )
+            write_review_progress(
+                staging_dir / artifacts.review_progress,
+                doc_id,
+                created,
+                chunks,
+                artifact_version=contract.intake_review_progress_version,
+            )
+            write_intake_report(
+                staging_dir / artifacts.intake_report,
+                doc_id,
+                title,
+                source,
+                created,
+                chunks,
+                status=required_generated_status(contract, "intake-document"),
+                artifacts=artifacts,
+                confidence=contract.generated_values["intake_confidence"],
+            )
+            validate_intake_artifacts(
+                staging_dir,
+                doc_id,
+                chunks,
+                staged_source_path,
+                artifacts,
+            )
+
+            if not file_matches_sha256(source, source_hash):
+                print("error: source changed after the inbox preflight; run check_inbox.py again", file=sys.stderr)
+                return 6
+            if doc_dir.exists():
+                raise FileExistsError(doc_dir)
+            staging_dir.rename(doc_dir)
+            published = True
+            ensure_intake_index(
+                wiki_root / contract.semantic_paths.intake_index_file,
+                doc_id,
+                title,
+                source,
+                status=required_generated_status(contract, "intake-document"),
+                report_path=doc_dir / artifacts.intake_report,
+            )
+            completed = True
+        except FileExistsError:
+            print(f"error: intake document already exists: {doc_id}", file=sys.stderr)
+            return 2
+        except (OSError, ValueError) as error:
+            print(f"error: failed to create intake document {doc_id}: {error}", file=sys.stderr)
+            return 5
+        finally:
+            if staging_dir.exists():
+                shutil.rmtree(staging_dir)
+            if published and not completed and doc_dir.exists():
+                shutil.rmtree(doc_dir)
+    finally:
+        shutil.rmtree(snapshot_root)
 
     print(f"created intake document: {doc_id}")
     print(f"output: {doc_dir}")
-    print("artifacts: source-info.yml, extracted.md, chunks.json, chunks/, intake-report.md")
+    print(
+        "artifacts: "
+        f"{artifacts.source_info}, {artifacts.extraction_index}, "
+        f"{artifacts.chunks_manifest}, {artifacts.chunk_directory}/, "
+        f"{artifacts.intake_report}, {artifacts.review_progress}"
+    )
     return 0
 
 
@@ -187,26 +337,35 @@ def extract_docx(source: Path) -> list[TextBlock]:
     document = docx.Document(source)
     blocks: list[TextBlock] = []
     current_heading: str | None = None
+    table_index = 0
 
-    for paragraph in document.paragraphs:
-        text = normalize_text(paragraph.text)
+    for item in document.iter_inner_content():
+        if hasattr(item, "rows"):
+            table_index += 1
+            rows: list[str] = []
+            for row in item.rows:
+                cells = [normalize_text(cell.text) for cell in row.cells]
+                if any(cells):
+                    rows.append(" | ".join(cells))
+            if rows:
+                blocks.append(
+                    TextBlock(
+                        text="\n".join(rows),
+                        heading=current_heading or f"Table {table_index}",
+                        starts_section=True,
+                    )
+                )
+            continue
+
+        text = normalize_text(item.text)
         if not text:
             continue
-        style_name = getattr(paragraph.style, "name", "") or ""
+        style_name = getattr(item.style, "name", "") or ""
         if style_name.lower().startswith("heading"):
             current_heading = text
-            blocks.append(TextBlock(text=text, heading=current_heading))
+            blocks.append(TextBlock(text=text, heading=current_heading, starts_section=True))
         else:
             blocks.append(TextBlock(text=text, heading=current_heading))
-
-    for table_index, table in enumerate(document.tables, start=1):
-        rows: list[str] = []
-        for row in table.rows:
-            cells = [normalize_text(cell.text) for cell in row.cells]
-            if any(cells):
-                rows.append(" | ".join(cells))
-        if rows:
-            blocks.append(TextBlock(text="\n".join(rows), heading=f"Table {table_index}"))
 
     return blocks
 
@@ -220,60 +379,84 @@ def extract_text(source: Path) -> list[TextBlock]:
         if not block:
             continue
         first_line = block.splitlines()[0].strip()
-        if first_line.startswith("#"):
+        starts_section = first_line.startswith("#")
+        if starts_section:
             current_heading = first_line.lstrip("#").strip() or current_heading
-        blocks.append(TextBlock(text=block, heading=current_heading))
+        blocks.append(TextBlock(text=block, heading=current_heading, starts_section=starts_section))
     return blocks
 
 
-def build_chunks(doc_id: str, blocks: Iterable[TextBlock], max_words: int) -> list[Chunk]:
+def build_chunks(
+    doc_id: str,
+    blocks: Iterable[TextBlock],
+    max_words: int,
+    contract: SchemaContract | None = None,
+) -> list[Chunk]:
+    contract = contract or load_schema_contract()
     chunks: list[Chunk] = []
-    current_words: list[str] = []
+    current_parts: list[str] = []
+    current_word_count = 0
     current_pages: list[int] = []
     current_heading: str | None = None
 
     def emit() -> None:
-        nonlocal current_words, current_pages, current_heading
-        if not current_words:
+        nonlocal current_parts, current_word_count, current_pages, current_heading
+        if not current_parts:
             return
-        text = " ".join(current_words).strip()
+        text = "\n\n".join(current_parts).strip()
         sequence = len(chunks) + 1
         page_start = min(current_pages) if current_pages else None
         page_end = max(current_pages) if current_pages else None
         chunks.append(
             Chunk(
-                id=f"{doc_id}-CH-{sequence:03d}",
+                id=(
+                    f"{doc_id}-{contract.id_generation.intake_chunk_label}-"
+                    f"{sequence:0{contract.id_generation.intake_chunk_sequence_width}d}"
+                ),
+                text_path=(
+                    f"{contract.intake_artifacts.chunk_directory}/"
+                    f"{contract.id_generation.intake_chunk_label}-"
+                    f"{sequence:0{contract.id_generation.intake_chunk_sequence_width}d}.md"
+                ),
                 sequence=sequence,
                 heading=current_heading,
                 page_start=page_start,
                 page_end=page_end,
-                word_count=len(current_words),
+                word_count=current_word_count,
                 char_count=len(text),
                 hints=detect_hints(text),
                 text=text,
             )
         )
-        current_words = []
+        current_parts = []
+        current_word_count = 0
         current_pages = []
         current_heading = None
 
     for block in blocks:
-        words = block.text.split()
-        if not words:
+        word_spans = list(re.finditer(r"\S+", block.text))
+        if not word_spans:
             continue
-        while words:
-            remaining = max_words - len(current_words)
+        if block.starts_section and current_parts:
+            emit()
+        position = 0
+        while position < len(word_spans):
+            remaining = max_words - current_word_count
             if remaining <= 0:
                 emit()
                 remaining = max_words
-            take = words[:remaining]
-            words = words[remaining:]
+            end_position = min(position + remaining, len(word_spans))
+            segment = block.text[
+                word_spans[position].start() : word_spans[end_position - 1].end()
+            ]
             if current_heading is None:
                 current_heading = block.heading
-            current_words.extend(take)
+            current_parts.append(segment)
+            current_word_count += end_position - position
             if block.page is not None:
                 current_pages.append(block.page)
-            if len(current_words) >= max_words:
+            position = end_position
+            if current_word_count >= max_words:
                 emit()
 
     emit()
@@ -291,16 +474,20 @@ def normalize_text(text: str) -> str:
     return text.strip()
 
 
-def next_doc_id(documents_root: Path) -> str:
-    today = datetime.now().strftime("%Y%m%d")
-    pattern = re.compile(rf"DOCIN-{today}-(\d{{3}})$")
+def next_doc_id(documents_root: Path, contract: SchemaContract | None = None) -> str:
+    contract = contract or load_schema_contract()
+    generation = contract.id_generation
+    today = datetime.now().strftime(generation.intake_date_format)
+    prefix = generation.intake_document_prefix
+    width = generation.intake_sequence_width
+    pattern = re.compile(rf"{re.escape(prefix)}-{today}-(\d{{{width}}})$")
     used = []
-    for path in documents_root.glob(f"DOCIN-{today}-*"):
+    for path in documents_root.glob(f"{prefix}-{today}-*"):
         match = pattern.fullmatch(path.name)
         if match:
             used.append(int(match.group(1)))
     next_number = max(used, default=0) + 1
-    return f"DOCIN-{today}-{next_number:03d}"
+    return f"{prefix}-{today}-{next_number:0{width}d}"
 
 
 def sha256_file(path: Path) -> str:
@@ -311,10 +498,83 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def copy_source(source: Path, doc_dir: Path) -> Path:
-    target = doc_dir / f"source{source.suffix.lower()}"
+def snapshot_source(source: Path, target: Path) -> str:
+    digest = hashlib.sha256()
+    with source.open("rb") as source_file, target.open("xb") as snapshot_file:
+        for chunk in iter(lambda: source_file.read(1024 * 1024), b""):
+            digest.update(chunk)
+            snapshot_file.write(chunk)
+        snapshot_file.flush()
+        os.fsync(snapshot_file.fileno())
+    return digest.hexdigest()
+
+
+def file_matches_sha256(path: Path, expected_hash: str) -> bool:
+    try:
+        return sha256_file(path) == expected_hash
+    except OSError:
+        return False
+
+
+def required_generated_status(contract: SchemaContract, document_type: str) -> str:
+    status = contract.generated_status_for_type(document_type)
+    if status is None:
+        raise SchemaContractError(f"schema contract has no generated status for {document_type}")
+    return status
+
+
+def copy_source(source: Path, doc_dir: Path, copied_source_stem: str = "source") -> Path:
+    target = doc_dir / f"{copied_source_stem}{source.suffix.lower()}"
     shutil.copy2(source, target)
     return target
+
+
+def validate_intake_artifacts(
+    doc_dir: Path,
+    doc_id: str,
+    chunks: list[Chunk],
+    copied_source_path: Path | None,
+    artifacts: Any,
+) -> None:
+    required_files = [
+        doc_dir / artifacts.source_info,
+        doc_dir / artifacts.extraction_index,
+        doc_dir / artifacts.chunks_manifest,
+        doc_dir / artifacts.intake_report,
+        doc_dir / artifacts.review_progress,
+    ]
+    required_files.extend(doc_dir / chunk_text_path(chunk) for chunk in chunks)
+    if copied_source_path is not None:
+        required_files.append(copied_source_path)
+
+    missing = [path.relative_to(doc_dir).as_posix() for path in required_files if not path.is_file()]
+    if missing:
+        raise ValueError(f"staged intake is missing required artifacts: {', '.join(missing)}")
+
+    empty = [path.relative_to(doc_dir).as_posix() for path in required_files if path.stat().st_size == 0]
+    if empty:
+        raise ValueError(f"staged intake contains empty artifacts: {', '.join(empty)}")
+
+    try:
+        manifest = json.loads((doc_dir / artifacts.chunks_manifest).read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        raise ValueError(f"invalid {artifacts.chunks_manifest}: {error}") from error
+
+    entries = manifest.get("chunks")
+    if manifest.get("id") != doc_id or not isinstance(entries, list) or len(entries) != len(chunks):
+        raise ValueError(f"{artifacts.chunks_manifest} does not match the staged intake")
+
+    expected_chunks = [(chunk.id, chunk_text_path(chunk)) for chunk in chunks]
+    actual_chunks = [(entry.get("id"), entry.get("text_path")) for entry in entries if isinstance(entry, dict)]
+    if actual_chunks != expected_chunks:
+        raise ValueError(f"{artifacts.chunks_manifest} contains inconsistent chunk references")
+
+    progress_text = (doc_dir / artifacts.review_progress).read_text(encoding="utf-8")
+    if f"intake_id: {doc_id}\n" not in progress_text:
+        raise ValueError(f"{artifacts.review_progress} does not match the staged intake")
+    for chunk_id, _ in expected_chunks:
+        if progress_text.count(f"  - id: {chunk_id}\n") != 1:
+            raise ValueError(f"{artifacts.review_progress} contains inconsistent chunk references")
 
 
 def yaml_scalar(value: object) -> str:
@@ -336,12 +596,15 @@ def write_source_info(
     file_type: str,
     word_count: int,
     chunk_count: int,
+    status: str,
+    artifact_version: int,
+    confidence: str,
 ) -> None:
     lines = [
-        "version: 1",
+        f"version: {artifact_version}",
         f"id: {yaml_scalar(doc_id)}",
         "type: intake-document",
-        "status: active",
+        f"status: {status}",
         f"title: {yaml_scalar(title)}",
         f"created: {yaml_scalar(created)}",
         f"updated: {yaml_scalar(created)}",
@@ -353,7 +616,7 @@ def write_source_info(
         f"copied_source_path: {yaml_scalar(copied_source_path.as_posix() if copied_source_path else None)}",
         f"word_count: {word_count}",
         f"chunk_count: {chunk_count}",
-        "confidence: confirmed",
+        f"confidence: {confidence}",
     ]
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -366,32 +629,40 @@ def write_extracted_markdown(
     created: str,
     blocks: list[TextBlock],
     chunks: list[Chunk],
+    status: str,
+    artifacts: Any,
+    confidence: str,
 ) -> None:
     lines = [
         "---",
         f"id: {doc_id}-EXTRACTED",
         "type: intake-extraction-index",
-        "status: active",
+        f"status: {status}",
         f"title: {yaml_scalar(f'Extraction Index - {title}')}",
         f"created: {yaml_scalar(created)}",
         f"updated: {yaml_scalar(created)}",
         "tags: [intake, extracted-text, extraction-index]",
         f"related: [{yaml_scalar(doc_id)}]",
         f"source_paths: [{yaml_scalar(source.as_posix())}]",
-        "confidence: confirmed",
+        f"confidence: {confidence}",
         "---",
         "",
         f"# Extraction Index - {title}",
         "",
         f"Source: `{source.as_posix()}`",
         "",
-        "Generated headings and metadata are in English. Full extracted text is stored progressively in `chunks/CH-*.md` by default to avoid token-heavy files.",
+        (
+            "Generated headings and metadata are in English. Full extracted text is stored progressively in "
+            f"`{artifacts.chunk_directory}/{Path(chunks[0].text_path).name if chunks else '*.md'}`-style files "
+            "to avoid token-heavy indexes."
+        ),
         "",
         "## Progressive Text Access",
         "",
-        "- Read [intake-report.md](./intake-report.md) first.",
-        "- Read [chunks.json](./chunks.json) as a lightweight manifest.",
-        "- Open files under [chunks/](./chunks/) progressively until the requested review or integration is complete.",
+        f"- Read [{artifacts.intake_report}](./{artifacts.intake_report}) first.",
+        f"- Read [{artifacts.chunks_manifest}](./{artifacts.chunks_manifest}) as a lightweight manifest.",
+        f"- Track every disposition in [{artifacts.review_progress}](./{artifacts.review_progress}).",
+        f"- Open files under [{artifacts.chunk_directory}/](./{artifacts.chunk_directory}/) progressively until the requested review or integration is complete.",
         "",
         "## Extraction Summary",
         "",
@@ -411,7 +682,7 @@ def write_extracted_markdown(
 
 
 def chunk_text_path(chunk: Chunk) -> str:
-    return f"chunks/CH-{chunk.sequence:03d}.md"
+    return chunk.text_path
 
 
 def chunk_preview(text: str, max_chars: int = 280) -> str:
@@ -421,10 +692,19 @@ def chunk_preview(text: str, max_chars: int = 280) -> str:
     return compact[: max_chars - 1].rstrip() + "..."
 
 
-def write_chunk_files(path: Path, doc_id: str, title: str, source: Path, created: str, chunks: list[Chunk]) -> None:
+def write_chunk_files(
+    path: Path,
+    doc_id: str,
+    title: str,
+    source: Path,
+    created: str,
+    chunks: list[Chunk],
+    status: str,
+    confidence: str,
+) -> None:
     path.mkdir(parents=True, exist_ok=True)
     for chunk in chunks:
-        chunk_path = path / f"CH-{chunk.sequence:03d}.md"
+        chunk_path = path / Path(chunk.text_path).name
         page_range = "null"
         if chunk.page_start is not None and chunk.page_end is not None:
             page_range = f"{chunk.page_start}-{chunk.page_end}"
@@ -432,14 +712,14 @@ def write_chunk_files(path: Path, doc_id: str, title: str, source: Path, created
             "---",
             f"id: {yaml_scalar(chunk.id)}",
             "type: intake-chunk",
-            "status: active",
+            f"status: {status}",
             f"title: {yaml_scalar(f'{title} - Chunk {chunk.sequence:03d}')}",
             f"created: {yaml_scalar(created)}",
             f"updated: {yaml_scalar(created)}",
             "tags: [intake, chunk]",
             f"related: [{yaml_scalar(doc_id)}]",
             f"source_paths: [{yaml_scalar(source.as_posix())}]",
-            "confidence: confirmed",
+            f"confidence: {confidence}",
             "---",
             "",
             f"# {chunk.id}",
@@ -468,6 +748,8 @@ def write_chunks_json(
     created: str,
     max_words: int,
     chunks: list[Chunk],
+    artifact_version: int,
+    artifacts: Any,
 ) -> None:
     chunk_entries: list[dict[str, object]] = []
     for chunk in chunks:
@@ -486,7 +768,7 @@ def write_chunks_json(
         chunk_entries.append(entry)
 
     payload = {
-        "version": 1,
+        "version": artifact_version,
         "id": doc_id,
         "type": "intake-chunks",
         "title": title,
@@ -499,17 +781,63 @@ def write_chunks_json(
         "chunking": {
             "max_words": max_words,
             "text_storage": "external-chunk-files",
-            "chunk_directory": "chunks/",
+            "chunk_directory": f"{artifacts.chunk_directory}/",
             "inline_text": False,
             "signals_file": None,
-            "note": "No separate signals.json is generated in V1. Lightweight extraction hints are stored per chunk. Full chunk text is always stored in chunks/ to avoid token-heavy manifests.",
+            "note": (
+                "No separate signals.json is generated in V1. Lightweight extraction hints are stored per chunk. "
+                f"Full chunk text is always stored in {artifacts.chunk_directory}/ to avoid token-heavy manifests."
+            ),
         },
         "chunks": chunk_entries,
     }
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
-def write_intake_report(path: Path, doc_id: str, title: str, source: Path, created: str, chunks: list[Chunk]) -> None:
+def write_review_progress(
+    path: Path,
+    doc_id: str,
+    updated: str,
+    chunks: list[Chunk],
+    artifact_version: int,
+) -> None:
+    lines = [
+        f"version: {artifact_version}",
+        f"intake_id: {doc_id}",
+        f"updated: {updated}",
+        "review_status: in-progress",
+        "summary:",
+        f"  total: {len(chunks)}",
+        f"  pending: {len(chunks)}",
+        "  reviewed: 0",
+        "  classified: 0",
+        "  skipped: 0",
+        "chunks:",
+    ]
+    for chunk in chunks:
+        lines.extend(
+            [
+                f"  - id: {chunk.id}",
+                "    status: pending",
+                "    classifications: []",
+                "    target_ids: []",
+                "    notes: null",
+            ]
+        )
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def write_intake_report(
+    path: Path,
+    doc_id: str,
+    title: str,
+    source: Path,
+    created: str,
+    chunks: list[Chunk],
+    status: str,
+    artifacts: Any,
+    confidence: str,
+) -> None:
     hint_counts: dict[str, int] = {}
     for chunk in chunks:
         for hint in chunk.hints:
@@ -520,14 +848,14 @@ def write_intake_report(path: Path, doc_id: str, title: str, source: Path, creat
         "---",
         f"id: {doc_id}",
         "type: intake-document",
-        "status: active",
+        f"status: {status}",
         f"title: {yaml_scalar(title)}",
         f"created: {yaml_scalar(created)}",
         f"updated: {yaml_scalar(created)}",
         "tags: [intake, source-document]",
         "related: []",
         f"source_paths: [{yaml_scalar(source.as_posix())}]",
-        "confidence: confirmed",
+        f"confidence: {confidence}",
         "---",
         "",
         f"# Document Intake Report - {title}",
@@ -537,22 +865,24 @@ def write_intake_report(path: Path, doc_id: str, title: str, source: Path, creat
         f"- Intake ID: `{doc_id}`",
         f"- Source path: `{source.as_posix()}`",
         f"- Source filename: `{source.name}`",
-        "- Intake status: `active`",
+        f"- Intake status: `{status}`",
         "",
         "## Generated Artifacts",
         "",
-        "- [source-info.yml](./source-info.yml)",
-        "- [extracted.md](./extracted.md)",
-        "- [chunks.json](./chunks.json)",
-        "- [chunks/](./chunks/)",
+        f"- [{artifacts.source_info}](./{artifacts.source_info})",
+        f"- [{artifacts.extraction_index}](./{artifacts.extraction_index})",
+        f"- [{artifacts.chunks_manifest}](./{artifacts.chunks_manifest})",
+        f"- [{artifacts.review_progress}](./{artifacts.review_progress})",
+        f"- [{artifacts.chunk_directory}/](./{artifacts.chunk_directory}/)",
         "",
         "## Extraction Summary",
         "",
         f"- Chunk count: {len(chunks)}",
         f"- Total extracted words: {sum(chunk.word_count for chunk in chunks)}",
         "- Separate signals file: not generated in V1",
-        "- Lightweight hints: stored inside `chunks.json` per chunk",
-        "- Full chunk text: stored in separate files under `chunks/`",
+        f"- Lightweight hints: stored inside `{artifacts.chunks_manifest}` per chunk",
+        f"- Review coverage: tracked for every chunk in `{artifacts.review_progress}`",
+        f"- Full chunk text: stored in separate files under `{artifacts.chunk_directory}/`",
         "- Candidate listing: every chunk with lightweight hints is listed below; this is not an integration cap",
         "",
         "## Hint Summary",
@@ -566,7 +896,10 @@ def write_intake_report(path: Path, doc_id: str, title: str, source: Path, creat
 
     lines.extend(["", "## Candidate Chunks For Agent Review", ""])
     if candidate_chunks:
-        lines.append("Every chunk with lightweight hints is listed here. Chunks without hints may still be relevant; use `chunks.json` to review the full document progressively when integrating requirements.")
+        lines.append(
+            "Every chunk with lightweight hints is listed here. Chunks without hints may still be relevant; "
+            f"use `{artifacts.chunks_manifest}` to review the full document progressively when integrating requirements."
+        )
         lines.append("")
         for chunk in candidate_chunks:
             page_part = f", pages {chunk.page_start}-{chunk.page_end}" if chunk.page_start is not None else ""
@@ -589,19 +922,40 @@ def write_intake_report(path: Path, doc_id: str, title: str, source: Path, creat
             "- Technical documentation for implemented behavior.",
             "- A conflict with the current KB or as-is technical state.",
             "- An open question.",
-            "- Background information that should not enter the canonical KB.",
+            "- Background information to mark `skipped` with a reason rather than integrate into the canonical KB.",
             "",
-            "Read `chunks.json` as a lightweight manifest first, then open chunk files progressively until every item relevant to the requested integration has been classified. Do not stop at a fixed number of candidate chunks.",
+            f"Read `{artifacts.chunks_manifest}` as a lightweight manifest first, then open chunk files progressively until every item relevant to the requested integration has been classified. Do not stop at a fixed number of candidate chunks.",
             "",
-            "Clear, low-risk information may be integrated directly into the KB and logged. Create `review.md` only when the source information is significant, ambiguous, risky, conflicting, authority-unclear, or materially cross-section. The review must still cover all relevant information rather than a truncated sample.",
+            f"Update `{artifacts.review_progress}` after each batch. Do not mark the intake complete while any chunk is `pending` or `reviewed`.",
+            "",
+            f"Clear, low-risk information may be integrated directly into the KB and logged. Create `{artifacts.review}` only when the source information is significant, ambiguous, risky, conflicting, authority-unclear, or materially cross-section. The review must still cover all relevant information rather than a truncated sample.",
         ]
     )
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def ensure_intake_index(path: Path, doc_id: str, title: str, source: Path) -> None:
+def ensure_intake_index(
+    path: Path,
+    doc_id: str,
+    title: str,
+    source: Path,
+    status: str = "active",
+    report_path: Path | None = None,
+) -> None:
+    if report_path is None:
+        contract = load_schema_contract()
+        wiki_root = path
+        for _ in PurePosixPath(contract.semantic_paths.intake_index_file).parts:
+            wiki_root = wiki_root.parent
+        report_path = (
+            wiki_root
+            / contract.semantic_paths.intake_documents_directory
+            / doc_id
+            / contract.intake_artifacts.intake_report
+        )
+    relative_report = Path(os.path.relpath(report_path, path.parent)).as_posix()
     path.parent.mkdir(parents=True, exist_ok=True)
-    entry = f"- [{doc_id}](./documents/{doc_id}/intake-report.md) - {title} (`active`, source: `{source.name}`)"
+    entry = f"- [{doc_id}](./{relative_report}) - {title} (`{status}`, source: `{source.name}`)"
     if path.exists():
         content = path.read_text(encoding="utf-8")
         if doc_id in content:
@@ -629,7 +983,23 @@ def ensure_intake_index(path: Path, doc_id: str, title: str, source: Path) -> No
                 "",
             ]
         )
-    path.write_text(content.rstrip() + "\n", encoding="utf-8")
+    atomic_write_text(path, content.rstrip() + "\n")
+
+
+def atomic_write_text(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}-", dir=path.parent)
+    temporary_path = Path(temporary_name)
+    try:
+        mode = path.stat().st_mode & 0o777 if path.exists() else 0o644
+        os.fchmod(descriptor, mode)
+        with os.fdopen(descriptor, "w", encoding="utf-8") as file_obj:
+            file_obj.write(content)
+            file_obj.flush()
+            os.fsync(file_obj.fileno())
+        temporary_path.replace(path)
+    finally:
+        temporary_path.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

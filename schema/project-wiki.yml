@@ -1,0 +1,614 @@
+manifest_version: 1
+
+schema:
+  name: project-wiki
+  version: 1.4.0
+  updated: '2026-08-24'
+
+registries:
+  document_version: 1
+  source_version: 1
+
+artifact_versions:
+  intake_source_info: 1
+  intake_chunks_manifest: 1
+  intake_review_progress: 1
+
+intake_artifacts:
+  source_info: source-info.yml
+  extraction_index: extracted.md
+  chunks_manifest: chunks.json
+  chunk_directory: chunks
+  intake_report: intake-report.md
+  review_progress: review-progress.yml
+  review: review.md
+  copied_source_stem: source
+
+review_progress:
+  workflow_statuses:
+    - in-progress
+    - complete
+  entry_statuses:
+    - pending
+    - reviewed
+    - classified
+    - skipped
+  complete_entry_statuses:
+    - classified
+    - skipped
+  classifications:
+    - requirement
+    - requirement-refinement
+    - change-request
+    - decision
+    - technical-documentation
+    - work-item
+    - open-question
+    - conflict
+
+semantic_paths:
+  wiki_version_file: WIKI_VERSION.yml
+  document_registry_file: REGISTRY.yml
+  source_registry_file: sources/SOURCE_REGISTRY.yml
+  source_inbox_directory: sources/inbox
+  source_processed_directory: sources/processed
+  source_rejected_directory: sources/rejected
+  source_ignored_directory: sources/ignored
+  intake_root_directory: intake
+  intake_documents_directory: intake/documents
+  intake_index_file: intake/INDEX.md
+
+canonical_tree:
+  required_directories:
+    - requirements/functional
+    - requirements/non-functional
+    - changes/requests
+    - changes/decisions
+    - technical/modules
+    - technical/api
+    - technical/data
+    - technical/integrations
+    - implementation/work-items
+    - implementation/scans
+    - traceability
+    - analysis
+    - maintenance
+    - alerts
+    - intake/documents
+    - sources/inbox
+    - sources/processed
+    - sources/rejected
+    - sources/ignored
+    - logs
+    - templates
+  required_files:
+    - INDEX.md
+    - WIKI_VERSION.yml
+    - REGISTRY.yml
+    - STATUS.md
+    - PROJECT.md
+    - GLOSSARY.md
+    - requirements/INDEX.md
+    - requirements/product-brief.md
+    - requirements/functional-requirements.md
+    - requirements/non-functional-requirements.md
+    - requirements/constraints.md
+    - requirements/open-questions.md
+    - changes/INDEX.md
+    - changes/CHANGELOG.md
+    - technical/INDEX.md
+    - technical/architecture.md
+    - technical/codebase-map.md
+    - technical/testing.md
+    - technical/deployment.md
+    - technical/security.md
+    - implementation/INDEX.md
+    - implementation/current-plan.md
+    - traceability/INDEX.md
+    - traceability/requirement-map.md
+    - traceability/change-impact-map.md
+    - traceability/code-map.md
+    - analysis/INDEX.md
+    - maintenance/INDEX.md
+    - alerts/INDEX.md
+    - intake/INDEX.md
+    - sources/INDEX.md
+    - sources/SOURCE_REGISTRY.yml
+    - logs/INDEX.md
+    - templates/requirement.md
+    - templates/change-request.md
+    - templates/adr.md
+    - templates/module-doc.md
+    - templates/api-doc.md
+    - templates/analysis.md
+    - templates/alert.md
+    - templates/source-index.md
+    - templates/source-registry.yml
+    - templates/document-intake-index.md
+    - templates/document-intake-review.md
+    - templates/maintenance-lint.md
+    - templates/schema-migration.md
+    - templates/scan-report.md
+    - templates/sync-report.md
+    - templates/work-item.md
+    - templates/wiki-log.md
+  example_files:
+    - requirements/functional/<project-topic>.md
+    - requirements/non-functional/<project-topic>.md
+    - changes/requests/CR-YYYYMMDD-001-short-title.md
+    - changes/decisions/ADR-0001-short-title.md
+    - technical/modules/module-name.md
+    - technical/api/api-name.md
+    - technical/data/data-model.md
+    - technical/integrations/integration-name.md
+    - implementation/work-items/WI-YYYYMMDD-001-short-title.md
+    - implementation/scans/scan-YYYYMMDD.md
+    - implementation/scans/sync-YYYYMMDD-001.md
+    - analysis/AN-YYYYMMDD-001-short-title.md
+    - maintenance/lint-YYYYMMDD.md
+    - maintenance/schema-migration-YYYYMMDD.md
+    - alerts/ALERT-YYYYMMDD-001-short-title.md
+    - intake/documents/DOCIN-YYYYMMDD-001/source-info.yml
+    - intake/documents/DOCIN-YYYYMMDD-001/extracted.md
+    - intake/documents/DOCIN-YYYYMMDD-001/chunks.json
+    - intake/documents/DOCIN-YYYYMMDD-001/chunks/CH-001.md
+    - intake/documents/DOCIN-YYYYMMDD-001/intake-report.md
+    - intake/documents/DOCIN-YYYYMMDD-001/review-progress.yml
+    - intake/documents/DOCIN-YYYYMMDD-001/review.md
+    - sources/processed/YYYY-MM/
+    - logs/wiki-log-YYYY-MM.md
+
+frontmatter:
+  required_fields:
+    - id
+    - type
+    - status
+    - title
+    - created
+    - updated
+    - tags
+    - related
+    - source_paths
+    - confidence
+  exempt_paths:
+    - STATUS.md
+    - changes/CHANGELOG.md
+    - traceability/requirement-map.md
+    - traceability/change-impact-map.md
+    - traceability/code-map.md
+
+statuses:
+  default:
+    - active
+    - draft
+    - placeholder
+    - superseded
+    - deprecated
+    - blocked
+    - resolved
+  alert:
+    - open
+    - resolved
+    - dismissed
+    - accepted-risk
+  open-question:
+    - open
+    - partially-resolved
+    - resolved
+    - superseded
+    - dismissed
+    - duplicate
+  intake:
+    - active
+    - reviewed
+    - integrated
+    - archived
+    - superseded
+    - rejected
+  source:
+    - pending
+    - processed
+    - failed
+    - rejected
+    - ignored
+    - superseded
+
+confidence_values:
+  - confirmed
+  - inferred
+  - unknown
+
+alert_severities:
+  - critical
+  - high
+  - medium
+  - low
+
+id_patterns:
+  generic: '[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*'
+  project: 'PROJECT'
+  requirement-overview: '(?:REQUIREMENTS|REQ-FUNCTIONAL|REQ-NON-FUNCTIONAL)-OVERVIEW'
+  note: '[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*'
+  technical: 'TECH-[A-Z0-9]+(?:-[A-Z0-9]+)*'
+  requirement: 'REQ-\d{3}'
+  non-functional-requirement: 'NFR-\d{3}'
+  requirements-topic: 'REQ-TOPIC-\d{8}-\d{3}'
+  constraint: 'CON-\d{3}'
+  open-question: 'OQ-\d{3}'
+  change-request: 'CR-\d{8}-\d{3}'
+  decision: 'ADR-\d{4}'
+  module: 'MOD-\d{3}'
+  api: 'API-\d{3}'
+  data: 'DATA-\d{3}'
+  integration: 'INT-\d{3}'
+  analysis: 'AN-\d{8}-\d{3}'
+  alert: 'ALERT-\d{8}-\d{3}'
+  intake-document: 'DOCIN-\d{8}-\d{3}'
+  intake-chunk: 'DOCIN-\d{8}-\d{3}-CH-\d{3}'
+  intake-review: 'DOCIN-\d{8}-\d{3}-REVIEW'
+  intake-extraction-index: 'DOCIN-\d{8}-\d{3}-EXTRACTED'
+  source-record: 'SRC-\d{8}-\d{3}'
+  work-item: 'WI-\d{8}-\d{3}'
+  scan-report: 'SCAN-\d{8}'
+  sync-report: 'SYNC-\d{8}-\d{3}'
+  maintenance-lint: 'LINT-\d{8}'
+  schema-migration: 'MIGRATION-\d{8}'
+  wiki-log: 'WLOG-\d{8}-\d{3}'
+
+id_examples:
+  project: PROJECT
+  requirement-overview: REQUIREMENTS-OVERVIEW
+  note: DOC-001
+  technical: TECH-SECURITY
+  requirement: REQ-001
+  non-functional-requirement: NFR-001
+  requirements-topic: REQ-TOPIC-20260820-001
+  constraint: CON-001
+  open-question: OQ-001
+  change-request: CR-20260820-001
+  decision: ADR-0001
+  module: MOD-001
+  api: API-001
+  data: DATA-001
+  integration: INT-001
+  analysis: AN-20260820-001
+  alert: ALERT-20260820-001
+  intake-document: DOCIN-20260820-001
+  intake-chunk: DOCIN-20260820-001-CH-001
+  intake-review: DOCIN-20260820-001-REVIEW
+  intake-extraction-index: DOCIN-20260820-001-EXTRACTED
+  source-record: SRC-20260820-001
+  work-item: WI-20260820-001
+  scan-report: SCAN-20260820
+  sync-report: SYNC-20260820-001
+  maintenance-lint: LINT-20260820
+  schema-migration: MIGRATION-20260820
+  wiki-log: WLOG-20260820-001
+
+embedded_id_pattern_keys:
+  - requirement
+  - non-functional-requirement
+  - requirements-topic
+  - constraint
+  - open-question
+  - change-request
+  - decision
+  - module
+  - api
+  - data
+  - integration
+  - analysis
+  - alert
+  - intake-document
+  - intake-chunk
+  - intake-review
+  - intake-extraction-index
+  - source-record
+  - work-item
+  - scan-report
+  - sync-report
+  - maintenance-lint
+  - schema-migration
+  - wiki-log
+
+document_type_contracts:
+  project:
+    id_pattern: project
+    status_domain: default
+  requirement-overview:
+    id_pattern: requirement-overview
+    status_domain: default
+  note:
+    id_pattern: note
+    status_domain: default
+  technical:
+    id_pattern: technical
+    status_domain: default
+  requirement:
+    id_pattern: requirement
+    status_domain: default
+  non-functional-requirement:
+    id_pattern: non-functional-requirement
+    status_domain: default
+  requirements-topic:
+    id_pattern: requirements-topic
+    status_domain: default
+  constraint:
+    id_pattern: constraint
+    status_domain: default
+  open-question:
+    id_pattern: open-question
+    status_domain: open-question
+  change-request:
+    id_pattern: change-request
+    status_domain: default
+  decision:
+    id_pattern: decision
+    status_domain: default
+  module:
+    id_pattern: module
+    status_domain: default
+  api:
+    id_pattern: api
+    status_domain: default
+  data:
+    id_pattern: data
+    status_domain: default
+  integration:
+    id_pattern: integration
+    status_domain: default
+  analysis:
+    id_pattern: analysis
+    status_domain: default
+  alert:
+    id_pattern: alert
+    status_domain: alert
+    required_fields: [severity]
+  intake-document:
+    id_pattern: intake-document
+    status_domain: intake
+    generated_status: active
+  intake-chunk:
+    id_pattern: intake-chunk
+    status_domain: intake
+    generated_status: active
+  intake-review:
+    id_pattern: intake-review
+    status_domain: intake
+    generated_status: reviewed
+  intake-extraction-index:
+    id_pattern: intake-extraction-index
+    status_domain: intake
+    generated_status: active
+  work-item:
+    id_pattern: work-item
+    status_domain: default
+  scan-report:
+    id_pattern: scan-report
+    status_domain: default
+  sync-report:
+    id_pattern: sync-report
+    status_domain: default
+  maintenance-lint:
+    id_pattern: maintenance-lint
+    status_domain: default
+  schema-migration:
+    id_pattern: schema-migration
+    status_domain: default
+
+embedded_id_status_domains:
+  ALERT-: alert
+  OQ-: open-question
+  DOCIN-: intake
+
+generated_values:
+  source_initial_status: pending
+  source_processed_status: processed
+  intake_confidence: confirmed
+
+id_generation:
+  intake_document_prefix: DOCIN
+  intake_date_format: '%Y%m%d'
+  intake_sequence_width: 3
+  intake_chunk_label: CH
+  intake_chunk_sequence_width: 3
+
+source_workflow:
+  processable_statuses:
+    - pending
+    - failed
+  terminal_statuses:
+    - processed
+    - rejected
+    - ignored
+    - superseded
+  status_priority:
+    - processed
+    - ignored
+    - rejected
+    - superseded
+    - pending
+    - failed
+  reason_actions:
+    new-unique: process
+    registered-pending: process
+    registered-failed: process
+    inbox-duplicate: skip
+    registered-processed: skip
+    registered-rejected: skip
+    registered-ignored: skip
+    registered-superseded: skip
+    intake-history-match: skip
+    historical-path-with-new-content: review
+    ambiguous-processable-history: review
+
+standalone_record_directories:
+  - changes/requests
+  - changes/decisions
+  - implementation/work-items
+  - implementation/scans
+  - analysis
+  - maintenance
+  - alerts
+
+template_contracts:
+  PROJECT.md:
+    type: project
+    id: PROJECT
+  Requirement Overview File:
+    type: requirement-overview
+    id: REQUIREMENTS-OVERVIEW
+  Requirement Topic File:
+    type: requirements-topic
+    id: REQ-TOPIC-YYYYMMDD-001
+  Change Request:
+    type: change-request
+    id: CR-YYYYMMDD-001
+  ADR:
+    type: decision
+    id: ADR-0001
+  Module Documentation:
+    type: module
+    id: MOD-001
+  API Documentation:
+    type: api
+    id: API-001
+  Scan Report:
+    type: scan-report
+    id: SCAN-YYYYMMDD
+  Sync Report:
+    type: sync-report
+    id: SYNC-YYYYMMDD-001
+  Work Item:
+    type: work-item
+    id: WI-YYYYMMDD-001
+  Document Intake Review:
+    type: intake-review
+    id: DOCIN-YYYYMMDD-001-REVIEW
+  Analysis Page:
+    type: analysis
+    id: AN-YYYYMMDD-001
+  Alert:
+    type: alert
+    id: ALERT-YYYYMMDD-001
+  Maintenance Lint Report:
+    type: maintenance-lint
+    id: LINT-YYYYMMDD
+  Schema Migration Report:
+    type: schema-migration
+    id: MIGRATION-YYYYMMDD
+
+template_section_inventory:
+  assets/core-templates.md:
+    - Root INDEX.md
+    - REGISTRY.yml
+    - WIKI_VERSION.yml
+    - Always-On Project Instruction Block
+    - STATUS.md
+    - PROJECT.md
+    - Section INDEX.md
+  assets/requirements-change-templates.md:
+    - Requirement Section
+    - Requirement Overview File
+    - Requirement Topic File
+    - Open Question
+    - Change Request
+    - ADR
+  assets/technical-implementation-templates.md:
+    - Module Documentation
+    - API Documentation
+    - Scan Report
+    - Sync Report
+    - Work Item
+    - Traceability Map
+  assets/intake-source-templates.md:
+    - SOURCE_REGISTRY.yml
+    - Sources INDEX.md
+    - Intake INDEX.md
+    - Document Intake Review
+  assets/governance-templates.md:
+    - Analysis INDEX.md
+    - Analysis Page
+    - Alerts INDEX.md
+    - Alert
+    - Maintenance INDEX.md
+    - Maintenance Lint Report
+    - Schema Migration Report
+    - Logs INDEX.md
+    - Wiki Log File
+
+documentation_contract:
+  version_references:
+    SKILL.md:
+      - 'Current project wiki schema version: `{schema_version}`'
+    README.md:
+      - 'Wiki schema {schema_version}'
+      - 'wiki_schema-{schema_version}-'
+    SECURITY.md:
+      - '`{schema_minor}.x` (Current)'
+      - '`< {schema_version}`'
+    references/workflows.md:
+      - 'Current project wiki schema version: `{schema_version}`'
+    assets/core-templates.md:
+      - 'schema_version: {schema_version}'
+    assets/governance-templates.md:
+      - 'Target schema version: {schema_version}'
+    .github/pull_request_template.md:
+      - 'Compatible with Wiki Schema `{schema_version}`'
+  public_tree_file: README.md
+  public_required_paths:
+    - changes/
+    - changes/requests/
+    - changes/decisions/
+    - requirements/
+    - technical/
+    - implementation/
+    - traceability/
+    - sources/inbox/
+    - intake/
+    - analysis/
+    - maintenance/
+    - alerts/
+    - logs/
+  required_path_references:
+    changes/decisions:
+      - README.md
+      - references/update-workflows.md
+      - assets/requirements-change-templates.md
+    changes/requests:
+      - README.md
+      - references/update-workflows.md
+  forbidden_root_paths:
+    decisions/:
+      - README.md
+      - CONTRIBUTING.md
+  intake_artifact_references:
+    source_info:
+      - README.md
+      - references/document-ingestion.md
+      - references/update-workflows.md
+    extraction_index:
+      - README.md
+      - references/document-ingestion.md
+      - references/update-workflows.md
+    chunks_manifest:
+      - README.md
+      - references/document-ingestion.md
+      - references/update-workflows.md
+    chunk_directory:
+      - README.md
+      - references/document-ingestion.md
+      - references/update-workflows.md
+    intake_report:
+      - README.md
+      - references/document-ingestion.md
+      - references/update-workflows.md
+    review_progress:
+      - README.md
+      - references/document-ingestion.md
+      - references/update-workflows.md
+    review:
+      - README.md
+      - references/document-ingestion.md
+      - references/update-workflows.md
+      - assets/intake-source-templates.md

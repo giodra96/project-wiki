@@ -4,7 +4,7 @@ Use these templates for requirement records, open questions, change requests, an
 
 ## Requirement Section
 
-Use `REQ-*` for functional requirements and `NFR-*` for non-functional requirements.
+Use `REQ-*` for functional requirements, `NFR-*` for non-functional requirements, and `CON-*` for constraints. Store `REQ-*` and `NFR-*` only in topic files under their family folders. For document-derived records, store supporting intake chunks only in `traceability/requirement-evidence.yml`; never repeat chunk IDs or paths in the readable record body.
 
 ```markdown
 <a id="req-001"></a>
@@ -14,7 +14,6 @@ Use `REQ-*` for functional requirements and `NFR-*` for non-functional requireme
 Status: active
 Tags: []
 Related: []
-Source paths: []
 Confidence: confirmed
 
 ### Statement
@@ -28,40 +27,6 @@ TBD
 ### Acceptance Notes
 
 TBD
-```
-
-## Requirement Overview File
-
-Use this shape for `requirements/functional-requirements.md` and `requirements/non-functional-requirements.md` when no explicit product-intent source confirms requirements yet.
-
-```markdown
----
-id: REQUIREMENTS-OVERVIEW
-type: requirement-overview
-status: placeholder
-title: Requirements Overview
-created: YYYY-MM-DD
-updated: YYYY-MM-DD
-tags: [requirements]
-related: [OPEN-QUESTIONS]
-source_paths: []
-confidence: unknown
----
-
-# Requirements Overview
-
-No confirmed functional or non-functional requirements are captured yet.
-
-## Routing
-
-- Observed implementation or technical evidence: link to the relevant `technical/` docs.
-- Questions to confirm product intent: [open-questions.md](./open-questions.md)
-
-## Placeholder
-
-Add requirements here only after they are confirmed by user notes, requirements documents, README content, issues, tickets, or stakeholder clarification.
-
-Do not add `Candidate Areas Requiring Confirmation`, observed behavior, technical concerns, or code-inferred candidate lists to this file.
 ```
 
 ## Requirement Topic File
@@ -94,7 +59,8 @@ Use the Requirement Section template for each requirement stored here.
 
 ## Routing Notes
 
-- Overview: [../functional-requirements.md](../functional-requirements.md) or [../non-functional-requirements.md](../non-functional-requirements.md)
+- Family index: [INDEX.md](./INDEX.md)
+- Requirements index: [../INDEX.md](../INDEX.md)
 - Traceability: [../../traceability/requirement-map.md](../../traceability/requirement-map.md)
 ```
 

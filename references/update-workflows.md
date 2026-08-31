@@ -16,7 +16,7 @@ Use this mode when the user pastes meeting minutes, documents, task notes, or pl
 8. If the note describes implemented behavior, observed code behavior, or code structure, update the relevant file under `technical/` instead of burying it in a CR or requirement. Put the note in requirements only when it states business or product intent.
 9. If the note introduces a future task, create or update a `WI-YYYYMMDD-###` work item under `implementation/work-items/`.
 10. Link every new record to related IDs and source paths when known.
-11. Place requirements in overview files for small or early projects. When a stable project-specific topic accumulates enough related requirements that an overview becomes noisy, create or update a topic file under `requirements/functional/` or `requirements/non-functional/`, move the related requirements there, and leave a routing summary in the overview.
+11. Store every confirmed `REQ-*` or `NFR-*` in a project-specific topic file under `requirements/functional/` or `requirements/non-functional/`; even small projects use at least one concise topic. Keep all requirements indexes routing-only. Store constraints as `CON-*` records in `requirements/constraints.md`.
 12. Update `changes/CHANGELOG.md` with a concise dated entry for each meaningful change.
 13. Update traceability maps whenever the note affects requirements, architecture, modules, APIs, data, integrations, tests, deployment, or security.
 14. Update `REGISTRY.yml`, relevant section indexes, `sources/SOURCE_REGISTRY.yml` when source files were processed, and `STATUS.md`.
@@ -59,30 +59,34 @@ Use this workflow when `update` receives an external PDF, DOCX, text, or Markdow
 4. Run the script from the target repository root with the skill script path, for example: `python3 /path/to/project-wiki/scripts/ingest_document.py <document-path> --wiki-root .project-wiki`.
 5. If PDF or DOCX dependencies are missing, install them from `./scripts/requirements.txt` or ask the user before proceeding if package installation is not allowed.
 6. The script must create `.project-wiki/intake/INDEX.md` and `.project-wiki/intake/documents/DOCIN-YYYYMMDD-NNN/` with `source-info.yml`, `extracted.md`, `chunks.json`, `chunks/`, `intake-report.md`, and `review-progress.yml`.
-7. Do not generate or expect `signals.json` in V1. Lightweight extraction hints live inside `chunks.json` and are summarized in `intake-report.md`.
-8. Treat `extracted.md` and `chunks.json` as lightweight routing files. The ingestion script must not generate monolithic full-text artifacts.
-9. Do not load every chunk file for large documents at once.
-10. Read `intake-report.md` and `chunks.json`, then run `review_progress.py status --wiki-root .project-wiki --intake-id <DOCIN-ID> --limit 20 --format json`. Process every returned batch; hints, previews, and user focus may prioritize order but never exclude chunks.
-11. After each batch, use `review_progress.py apply` with JSON updates for every processed entry. A chunk may map to multiple classifications and target IDs. Use `reviewed` only as an incomplete checkpoint; final entries must be `classified` or `skipped` with a reason.
+7. Do not generate or expect `signals.json` in V1. Lightweight extraction hints remain machine metadata inside `chunks.json`; do not load the manifest merely to inspect them.
+8. Read the compact `intake-report.md`, then run `review_progress.py inspect --wiki-root .project-wiki --intake-id <DOCIN-ID>` using its compact text output. Do not read `chunks.json`, `review-progress.yml`, `extracted.md`, or chunk wrappers directly unless troubleshooting a helper failure.
+9. If `inspect` reports clear, reliable source-defined sections, use `review_progress.py view --wiki-root .project-wiki --intake-id <DOCIN-ID> --section <SEC-ID>` and review every reported section, including `SEC-000` unsectioned content when present.
+10. Use `review_progress.py view --wiki-root .project-wiki --intake-id <DOCIN-ID> --all` whenever structure is absent, incomplete, ambiguous, or full-document context may matter. Never invent sections merely to reduce context.
+11. Use `review_progress.py apply` with JSON updates for every `pending` or `reviewed` chunk marker shown by `view`; preserve existing final dispositions. A chunk may map to multiple classifications and target IDs. Use `reviewed` only as an incomplete checkpoint; final entries must be `classified` or `skipped` with a reason.
 12. Compare candidate document items against `.project-wiki/INDEX.md`, `REGISTRY.yml`, relevant requirements, changes, technical docs, implementation docs, and traceability maps.
 13. Run [Open Questions Reconciliation](#open-questions-reconciliation-workflow) before proposing new open questions from document findings.
-14. When integrating requirements from document findings, use requirement topic scaling from [Wiki structure](./wiki-structure.md#requirements-topic-scaling).
+14. When integrating requirements from document findings, define the atomic topic plan before canonical authoring and use the record locations and requirement-evidence sidecar contract from [Wiki structure](./wiki-structure.md#requirements-topic-scaling).
 15. Keep intake documents as provenance only. Do not treat intake content as canonical project knowledge until it is integrated into the KB.
 16. Do not consult `integrated`, `archived`, `superseded`, or `rejected` intake documents during normal coding tasks unless the user asks for provenance, audit, or conflict investigation.
-17. Apply [Document-Based Update Gating](#document-based-update-gating) before modifying canonical KB files.
-18. Before setting intake status to `reviewed` or `integrated`, require `review_status: complete`, reconcile ledger summary counts, and run `validate_wiki.py`. For `integrated`, every classified chunk must list all registered target wiki IDs.
-19. If extraction is materially wrong before integration, mark the intake `rejected` or `superseded`, append a wiki audit log entry, and rerun ingestion instead of preserving known-bad extraction as a correction note.
-20. If extraction has minor usable issues, keep the intake and record extraction warnings in `intake-report.md`.
-21. If a previous intake was generated with full document text embedded in `extracted.md` or `chunks.json` and it caused context overflow before integration, mark it `superseded` or remove the failed intake and rerun ingestion with the current script.
-22. When the source came from `.project-wiki/sources/inbox/`, update `sources/SOURCE_REGISTRY.yml` and `sources/INDEX.md` after ingestion.
+17. Apply [Document-Based Update Gating](#document-based-update-gating). Continue with direct conservative integration unless a blocking, auditable human decision prevents canonical representation.
+18. On the direct path, write each planned REQ/NFR/CON in its topic file, record every record-to-chunk edge in `traceability/requirement-evidence.yml`, and preserve non-blocking uncertainty through OQ, alerts, status, confidence, blocked records, or explicit alternatives.
+19. On the blocking path, create `review.md` focused only on the exact decision, evidence, options, affected canonical scope, and consequences. After approval, resume this integration once; do not create another review gate for the same decision.
+20. Before setting intake status to `reviewed` or `integrated`, run `inspect` again and require `review_status: complete`, then run `review_progress.py audit`. Require `audit_status: review-complete` and retain its ledger summary and SHA-256.
+21. After any ledger correction, rerun `audit`. Immediately before changing the intake to a terminal status, run `audit --expect-ledger-sha256 <final-ledger-sha256>` using the latest digest; a mismatch requires another audit. Copy the final audit status, ledger summary, and SHA-256 into the wiki log.
+22. Reconcile ledger summary counts and run `validate_wiki.py`. Deterministic errors block completion; audit candidates do not. For `integrated`, every requirement-classified chunk must target at least one registered atomic REQ/NFR/CON, and ledger targets must match the requirement-evidence sidecar bidirectionally.
+23. If extraction is materially wrong before integration, mark the intake `rejected` or `superseded`, append a wiki audit log entry, and rerun ingestion instead of preserving known-bad extraction as a correction note.
+24. If extraction has minor usable issues, keep the intake and record extraction warnings in `intake-report.md`.
+25. If a previous intake was generated with full document text embedded in `extracted.md` or `chunks.json` and it caused context overflow before integration, mark it `superseded` or remove the failed intake and rerun ingestion with the current script.
+26. When the source came from `.project-wiki/sources/inbox/`, update `sources/SOURCE_REGISTRY.yml` and `sources/INDEX.md` after ingestion.
 
 ## Document-Based Update Gating
 
 Use this rule when `update` processes an external document such as PDF, DOCX, extracted text, or a long pasted specification.
 
-Apply the qualitative direct-update vs review rules from [Document ingestion](./document-ingestion.md#direct-update-vs-reviewmd). In short: integrate clear, low-risk information directly; create `review.md` only for significant, ambiguous, risky, conflicting, authority-unclear, or materially cross-section updates.
+Apply [Direct Integration vs Blocking Review](./document-ingestion.md#direct-integration-vs-blocking-review). An explicit `update` request authorizes conservative integration by default. Create `review.md` only when an auditable human decision is required and status, confidence, OQ, alerts, blocked records, or preserved alternatives cannot represent the uncertainty safely.
 
-Review gating controls approval and auditability. It must not cap the relevant source items proposed for integration, and it should not create repeated review gates for routine items that can be safely integrated and logged.
+Document size, density, number of findings, cross-section impact, security/privacy/compliance subject matter, OQ, alerts, or ADR candidates do not trigger review by themselves. A gate must identify the exact blocking question and cannot cap review coverage or atomic decomposition.
 
 Logging is mandatory: direct integration gets one wiki audit entry; review creation and the final approved, rejected, or postponed outcome are logged separately. Do not treat pending `review.md` content as canonical project knowledge until the user approves integration.
 

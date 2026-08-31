@@ -1,6 +1,6 @@
 # Project Wiki Intake And Source Templates
 
-Use these templates for source provenance, intake routing, and document review approval.
+Use these templates for source provenance, intake routing, and blocking decision review.
 
 ## SOURCE_REGISTRY.yml
 
@@ -76,7 +76,10 @@ This section stores external source documents imported for project-wiki update w
 ## Routing Rules
 
 - Read active and reviewed intake documents only when working on document-based updates, provenance, audits, or conflict investigation.
-- For large documents, read `intake-report.md`, `chunks.json`, and `review-progress.yml`, then process every manifest chunk in batches. Hints prioritize order but do not exclude chunks.
+- Read the compact `intake-report.md`, then use `review_progress.py inspect` for structure and coverage. Do not load `chunks.json`, `review-progress.yml`, or generated chunk wrappers directly unless troubleshooting.
+- Use `view --section SEC-NNN` only for reliable source-defined sections reported by `inspect`; review every listed section and unsectioned unit. Use `view --all` whenever structure is absent, incomplete, ambiguous, or full-document context may matter.
+- After complete coverage, run `review_progress.py audit`; require `review-complete` and record its ledger summary and SHA-256. Rerun after ledger corrections.
+- Before a terminal intake status, run `audit --expect-ledger-sha256 <final-ledger-sha256>` with the digest from the reviewed audit.
 - Do not mark an intake reviewed or integrated until the ledger is complete. Every classified integrated chunk must link to its registered target IDs; every skipped chunk needs a reason.
 - Do not read integrated, archived, superseded, or rejected intake documents during normal coding tasks unless explicitly requested.
 - Use canonical KB files, not intake documents, as the source of truth after integration.
@@ -92,7 +95,7 @@ This section stores external source documents imported for project-wiki update w
 
 ## Document Intake Review
 
-Write this template to `review.md` inside the intake document directory when qualitative review gating requires approval.
+Write this template to `review.md` only when canonical integration requires a blocking, auditable human decision. Keep the review focused on that decision rather than restating the complete source.
 
 ```markdown
 ---
@@ -119,57 +122,36 @@ confidence: inferred
 - Pending or reviewed: 0
 - Validator result: passed
 
-## Review Decision Needed
+## Blocking Decision Needed
 
-TBD
+- Exact question: TBD
+- Why conservative integration cannot proceed: TBD
+- Approval authority: TBD
 
-## Proposed Canonical KB Updates
+## Options And Consequences
+
+| Option | Canonical Effect | Risks Or Trade-Offs | Evidence |
+| --- | --- | --- | --- |
+| TBD | TBD | TBD | TBD |
+
+## Affected Canonical Scope
 
 | Candidate | Proposed Target | Action | Rationale |
 | --- | --- | --- | --- |
 | DOCIN-YYYYMMDD-001-CH-001 | requirements/functional/<project-topic>.md or requirements/non-functional/<project-topic>.md | Add requirement | TBD |
 
-## Potential Conflicts With Current KB Or As-Is State
+## Affected Atomic Requirement Plan
 
-- TBD
+Include this section only when the blocking decision changes requirement topic scope, target files, or permitted ID ranges. Complete the full decomposition plan after approval and before canonical authoring.
 
-## Open Questions
+| Family | Topic | Target File | Reserved IDs | Planned Atomic Records | Evidence Chunks |
+| --- | --- | --- | --- | ---: | --- |
+| functional | Authentication | requirements/functional/authentication.md | REQ-001..REQ-005 | 5 | DOCIN-YYYYMMDD-001-CH-001, DOCIN-YYYYMMDD-001-CH-002 |
+| non-functional | Security | requirements/non-functional/security.md | NFR-001..NFR-003 | 3 | DOCIN-YYYYMMDD-001-CH-003 |
 
-- TBD
+## Related Durable Records
 
-## Existing Open Questions Reconciled
-
-| Open Question | Outcome | Evidence | Notes |
-| --- | --- | --- | --- |
-| OQ-001 | resolved | DOCIN-YYYYMMDD-001-CH-001 | TBD |
-
-## Suggested Follow-Up Questions
-
-| Question | Why It Matters | Related Evidence | Suggested Action |
-| --- | --- | --- | --- |
-| TBD | TBD | TBD | TBD |
-
-## Missing Source Material
-
-| Gap | Impact | Related Evidence | Suggested Source |
-| --- | --- | --- | --- |
-| TBD | TBD | TBD | TBD |
-
-## Risky Assumptions
-
-| Assumption | Risk | Evidence | Proposed Action |
-| --- | --- | --- | --- |
-| TBD | TBD | TBD | TBD |
-
-## Alert Candidates
-
-| Candidate Alert | Severity | Why It Matters | Related Evidence |
-| --- | --- | --- | --- |
-| TBD | medium | TBD | TBD |
-
-## Items Not Proposed For Integration
-
-- TBD
+- Open questions, alerts, blocked records, or alternatives that preserve non-blocking uncertainty: TBD
 
 ## Approval Outcome
 

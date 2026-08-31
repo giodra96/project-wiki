@@ -96,7 +96,7 @@ class IngestDocumentTransactionTests(unittest.TestCase):
             },
         )
         source_info = (self.document_root / "source-info.yml").read_text(encoding="utf-8")
-        self.assertIn((self.document_root / "source.txt").as_posix(), source_info)
+        self.assertIn('copied_source_path: "source.txt"', source_info)
         self.assertNotIn(f".{self.doc_id}-", source_info)
         self.assertIn(self.doc_id, (self.wiki_root / "intake" / "INDEX.md").read_text(encoding="utf-8"))
 
@@ -200,7 +200,7 @@ class IngestDocumentTransactionTests(unittest.TestCase):
         date.fromisoformat(source_info["created"])
         self.assertEqual(source_info["created"], source_info["updated"])
         self.assertEqual(source_info["source_sha256"], source_hash)
-        self.assertEqual(source_info["copied_source_path"], (self.document_root / "source.txt").as_posix())
+        self.assertEqual(source_info["copied_source_path"], "source.txt")
         self.assertEqual(source_info["chunk_count"], len(manifest["chunks"]))
         self.assertEqual(source_info["word_count"], sum(chunk["word_count"] for chunk in manifest["chunks"]))
 
@@ -216,6 +216,25 @@ class IngestDocumentTransactionTests(unittest.TestCase):
         self.assertFalse(manifest["chunking"]["inline_text"])
         self.assertNotIn("text", chunk_entry)
         self.assertTrue(chunk_path.is_file())
+
+    def test_generated_routing_docs_use_compact_inspect_and_view_workflow(self) -> None:
+        _, _, manifest = self.generate_intake_artifacts()
+        report = (self.document_root / "intake-report.md").read_text(encoding="utf-8")
+        extraction_index = (self.document_root / "extracted.md").read_text(encoding="utf-8")
+        first_chunk_id = manifest["chunks"][0]["id"]
+
+        for content in (report, extraction_index):
+            self.assertIn("review_progress.py inspect", content)
+            self.assertIn("review_progress.py view", content)
+            self.assertNotIn(first_chunk_id, content)
+        self.assertIn("## Extraction Warnings", report)
+        self.assertNotIn("- Intake status:", report)
+        self.assertIn("review_progress.py audit", report)
+        self.assertIn("SHA-256", report)
+        self.assertIn("audit --expect-ledger-sha256", report)
+        self.assertNotIn("## Candidate Chunks For Agent Review", report)
+        self.assertNotIn("## Hint Summary", report)
+        self.assertNotIn("## Chunk Files", extraction_index)
 
     def test_generated_chunk_file_matches_manifest(self) -> None:
         _, _, manifest = self.generate_intake_artifacts()

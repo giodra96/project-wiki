@@ -36,6 +36,12 @@ except ImportError:
 
 SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
 INLINE_STATUS_PATTERN = re.compile(r"^\s*Status:\s*([A-Za-z][A-Za-z-]*)\s*$", re.IGNORECASE)
+INLINE_EVIDENCE_PREFIX_PATTERN = re.compile(r"^\s*Evidence\s*:", re.IGNORECASE)
+INTAKE_CHUNK_REFERENCE_PATTERN = re.compile(
+    r"(?:(?:\.project-wiki/)?intake/documents/)?DOCIN-\d{8}-\d{3}(?:/chunks/|-)CH-\d{3}(?:\.md)?\b",
+    re.IGNORECASE,
+)
+INTAKE_REPORT_BODY_STATUS_PATTERN = re.compile(r"^- Intake status: `([^`]+)`\s*$", re.MULTILINE)
 HTML_ANCHOR_PATTERN = re.compile(r"<[A-Za-z][^>]*\s(?:id|name)\s*=\s*[\"']([^\"']+)[\"']", re.I)
 
 DETERMINISTIC_CHECKS = (
@@ -43,6 +49,7 @@ DETERMINISTIC_CHECKS = (
     "YAML and JSON parsing",
     "Markdown frontmatter fields and value domains",
     "document ID format, uniqueness, and filename alignment",
+    "atomic requirement locations and structured intake evidence",
     "registry shape, uniqueness, paths, anchors, and catalog completeness",
     "source registry shape, hashes, statuses, paths, and intake references",
     "intake review ledger coverage, completion, skip reasons, and integrated target IDs",
@@ -182,6 +189,8 @@ class WikiValidator:
         self.definition_anchors_by_path: dict[str, dict[str, set[str]]] = {}
         self.embedded_status_by_path: dict[str, dict[str, str]] = {}
         self.embedded_title_by_path: dict[str, dict[str, str]] = {}
+        self.requirement_evidence_by_id: dict[str, tuple[str, ...]] = {}
+        self.intake_chunk_ids: set[str] = set()
         self.updated_by_path: dict[str, date] = {}
         self.anchor_cache: dict[str, set[str]] = {}
         self.pending_links: list[PendingLink] = []
@@ -203,6 +212,8 @@ class WikiValidator:
         self.check_intake_manifests()
         self.check_links()
         self.check_duplicate_definitions()
+        self.check_requirement_evidence()
+        self.check_embedded_record_contracts()
         self.check_wiki_version()
         self.check_source_registry()
         self.check_registry()
@@ -318,6 +329,7 @@ class WikiValidator:
                     self.add("error", "intake-manifest-chunk-id-duplicate", relative, f"Chunk ID '{chunk_id}' appears more than once.")
                 else:
                     seen_ids.add(chunk_id)
+                    self.intake_chunk_ids.add(chunk_id)
                 if not isinstance(text_path, str):
                     self.add("error", "intake-manifest-text-path-invalid", relative, f"Chunk {index} has no valid text_path.")
                     continue
@@ -483,16 +495,58 @@ class WikiValidator:
             if intake_status in {"reviewed", "integrated"} and not all_complete:
                 self.add("error", "intake-review-progress-incomplete", progress_relative, f"Intake status '{intake_status}' requires complete chunk review coverage.")
             if intake_status == "integrated":
+                ledger_atomic_edges: set[tuple[str, str]] = set()
                 for index, entry in enumerate(valid_entries, start=1):
                     if entry.get("status") != "classified":
                         continue
+                    chunk_id = entry.get("id")
+                    classifications = entry.get("classifications")
                     target_ids = entry.get("target_ids")
                     if not isinstance(target_ids, list) or not target_ids:
                         self.add("error", "intake-review-progress-target-required", progress_relative, f"chunks[{index}] classified entries require target IDs after integration.")
                         continue
+                    atomic_targets = [
+                        target_id
+                        for target_id in target_ids
+                        if isinstance(target_id, str) and self.is_atomic_requirement_id(target_id)
+                    ]
+                    if (
+                        isinstance(classifications, list)
+                        and {"requirement", "requirement-refinement"}.intersection(classifications)
+                        and not atomic_targets
+                    ):
+                        self.add(
+                            "error",
+                            "intake-review-progress-atomic-target-required",
+                            progress_relative,
+                            f"chunks[{index}] requirement classifications require at least one atomic REQ, NFR, or CON target.",
+                        )
                     for target_id in target_ids:
                         if isinstance(target_id, str) and target_id not in self.registry_ids:
                             self.add("error", "intake-review-progress-target-missing", progress_relative, f"chunks[{index}] target ID '{target_id}' is not registered.")
+                    if isinstance(chunk_id, str):
+                        for target_id in atomic_targets:
+                            ledger_atomic_edges.add((chunk_id, target_id))
+                            if chunk_id not in self.requirement_evidence_by_id.get(target_id, ()):
+                                self.add(
+                                    "error",
+                                    "intake-review-progress-evidence-mismatch",
+                                    progress_relative,
+                                    f"chunks[{index}] targets '{target_id}', but that record does not list '{chunk_id}' in Evidence.",
+                                )
+                evidence_atomic_edges = {
+                    (chunk_id, document_id)
+                    for document_id, evidence in self.requirement_evidence_by_id.items()
+                    for chunk_id in evidence
+                    if chunk_id.startswith(f"{intake_id}-")
+                }
+                for chunk_id, document_id in sorted(evidence_atomic_edges - ledger_atomic_edges):
+                    self.add(
+                        "error",
+                        "intake-review-progress-evidence-mismatch",
+                        progress_relative,
+                        f"Evidence links '{document_id}' to '{chunk_id}', but the integrated ledger does not contain the reciprocal target.",
+                    )
 
     def check_intake_source_info(self) -> None:
         artifacts = self.contract.intake_artifacts
@@ -595,6 +649,21 @@ class WikiValidator:
                             relative,
                             f"{artifacts.intake_report} {field} differs from {artifacts.source_info}.",
                         )
+            report_path = self.wiki_root / report_relative
+            if report_path.is_file():
+                report_text = self.read_text(report_path, report_relative)
+                body_statuses = (
+                    INTAKE_REPORT_BODY_STATUS_PATTERN.findall(report_text)
+                    if report_text is not None
+                    else []
+                )
+                if any(body_status != intake_status for body_status in body_statuses):
+                    self.add(
+                        "error",
+                        "intake-report-body-status-mismatch",
+                        report_relative,
+                        f"Body intake status must match {artifacts.source_info} status '{intake_status}'.",
+                    )
 
             copied_source = payload.get("copied_source_path")
             if copied_source is not None:
@@ -830,7 +899,7 @@ class WikiValidator:
                     heading_definitions.setdefault(document_id, []).append(line_number)
                     self.definitions_by_path.setdefault(relative, set()).add(document_id)
                     self.definition_anchors_by_path.setdefault(relative, {}).setdefault(document_id, set()).add(anchor)
-                    title = heading[len(document_id) :].lstrip(" -–—:").strip()
+                    title = self.heading_title(heading, document_id)
                     if title:
                         self.embedded_title_by_path.setdefault(relative, {})[document_id] = title
                 elif current_record_id is not None and token.tag.startswith("h"):
@@ -867,6 +936,28 @@ class WikiValidator:
                                 line_number + offset,
                             )
                         self.embedded_status_by_path[relative][current_record_id] = status
+                    if INLINE_EVIDENCE_PREFIX_PATTERN.match(line) and current_record_id is not None:
+                        self.add(
+                            "error",
+                            "embedded-inline-evidence-invalid",
+                            relative,
+                            f"Embedded record '{current_record_id}' must store intake evidence in "
+                            f"{self.contract.semantic_paths.requirement_evidence_file}, not inline.",
+                            line_number + offset,
+                        )
+                    if (
+                        current_record_id is not None
+                        and self.is_atomic_requirement_id(current_record_id)
+                        and INTAKE_CHUNK_REFERENCE_PATTERN.search(line)
+                    ):
+                        self.add(
+                            "error",
+                            "embedded-intake-chunk-reference-invalid",
+                            relative,
+                            f"Atomic record '{current_record_id}' must store intake chunk references in "
+                            f"{self.contract.semantic_paths.requirement_evidence_file}, not in its readable body.",
+                            line_number + offset,
+                        )
             for child in token.children or []:
                 if child.type == "link_open":
                     destination = child.attrGet("href")
@@ -910,6 +1001,19 @@ class WikiValidator:
         match = re.search(self.contract.id_pattern_strings["wiki-log"], heading)
         return match.group(0) if match else None
 
+    def is_atomic_requirement_id(self, document_id: str) -> bool:
+        return any(
+            self.contract.type_id_patterns[document_type].fullmatch(document_id) is not None
+            for document_type in ("requirement", "non-functional-requirement", "constraint")
+        )
+
+    @staticmethod
+    def heading_title(heading: str, document_id: str) -> str:
+        position = heading.find(document_id)
+        if position < 0:
+            return ""
+        return heading[position + len(document_id) :].lstrip(" | -–—:").strip()
+
     def check_duplicate_definitions(self) -> None:
         by_id: dict[str, list[IdDefinition]] = {}
         for definition in self.definitions:
@@ -929,6 +1033,121 @@ class WikiValidator:
                     definition.line,
                 )
 
+    def check_embedded_record_contracts(self) -> None:
+        atomic_patterns = {
+            "requirement": self.contract.type_id_patterns["requirement"],
+            "non-functional-requirement": self.contract.type_id_patterns["non-functional-requirement"],
+            "constraint": self.contract.type_id_patterns["constraint"],
+        }
+        for definition in self.definitions:
+            if definition.kind != "heading":
+                continue
+            relative = definition.path
+            document_id = definition.id
+            if PurePosixPath(relative).name == "INDEX.md":
+                self.add(
+                    "error",
+                    "index-embedded-record-invalid",
+                    relative,
+                    f"Index files are routing-only and cannot define embedded record '{document_id}'.",
+                    definition.line,
+                )
+            expected_location: str | None = None
+            if atomic_patterns["requirement"].fullmatch(document_id):
+                expected_location = "requirements/functional/*.md"
+                valid_location = (
+                    PurePosixPath(relative).parent.as_posix() == "requirements/functional"
+                    and PurePosixPath(relative).name != "INDEX.md"
+                )
+            elif atomic_patterns["non-functional-requirement"].fullmatch(document_id):
+                expected_location = "requirements/non-functional/*.md"
+                valid_location = (
+                    PurePosixPath(relative).parent.as_posix() == "requirements/non-functional"
+                    and PurePosixPath(relative).name != "INDEX.md"
+                )
+            elif atomic_patterns["constraint"].fullmatch(document_id):
+                expected_location = "requirements/constraints.md"
+                valid_location = relative == expected_location
+            else:
+                continue
+            if not valid_location:
+                self.add(
+                    "error",
+                    "atomic-record-location-invalid",
+                    relative,
+                    f"Atomic record '{document_id}' must be stored in {expected_location}.",
+                    definition.line,
+                )
+
+    def check_requirement_evidence(self) -> None:
+        relative = self.contract.semantic_paths.requirement_evidence_file
+        payload = self.yaml_documents.get(relative)
+        if not isinstance(payload, dict):
+            if (self.wiki_root / relative).is_file() and payload is not None:
+                self.add("error", "requirement-evidence-invalid", relative, "Requirement evidence must be a YAML mapping.")
+            return
+        if set(payload) != {"version", "records"} or payload.get("version") != 1:
+            self.add(
+                "error",
+                "requirement-evidence-invalid",
+                relative,
+                "Requirement evidence must contain version: 1 and a records mapping.",
+            )
+        records = payload.get("records")
+        if not isinstance(records, dict):
+            self.add("error", "requirement-evidence-invalid", relative, "Requirement evidence records must be a mapping.")
+            return
+        atomic_definition_ids = {
+            definition.id
+            for definition in self.definitions
+            if definition.kind == "heading" and self.is_atomic_requirement_id(definition.id)
+        }
+        for document_id, raw_evidence in records.items():
+            if not isinstance(document_id, str) or not self.is_atomic_requirement_id(document_id):
+                self.add(
+                    "error",
+                    "requirement-evidence-record-id-invalid",
+                    relative,
+                    f"Requirement evidence key {document_id!r} is not an atomic REQ, NFR, or CON ID.",
+                )
+                continue
+            if document_id not in atomic_definition_ids:
+                self.add(
+                    "error",
+                    "requirement-evidence-record-missing",
+                    relative,
+                    f"Requirement evidence references undefined atomic record '{document_id}'.",
+                )
+            if (
+                not isinstance(raw_evidence, list)
+                or not raw_evidence
+                or any(not isinstance(chunk_id, str) for chunk_id in raw_evidence)
+                or len(raw_evidence) != len(set(raw_evidence))
+            ):
+                self.add(
+                    "error",
+                    "requirement-evidence-chunks-invalid",
+                    relative,
+                    f"Evidence for '{document_id}' must be a non-empty unique list of chunk IDs.",
+                )
+                continue
+            evidence = tuple(raw_evidence)
+            self.requirement_evidence_by_id[document_id] = evidence
+            for chunk_id in evidence:
+                if self.contract.type_id_patterns["intake-chunk"].fullmatch(chunk_id) is None:
+                    self.add(
+                        "error",
+                        "requirement-evidence-chunk-id-invalid",
+                        relative,
+                        f"Evidence for '{document_id}' contains invalid chunk ID '{chunk_id}'.",
+                    )
+                elif chunk_id not in self.intake_chunk_ids:
+                    self.add(
+                        "error",
+                        "requirement-evidence-chunk-missing",
+                        relative,
+                        f"Evidence chunk '{chunk_id}' for '{document_id}' does not exist.",
+                    )
     def check_wiki_version(self) -> None:
         relative = self.contract.semantic_paths.wiki_version_file
         payload = self.yaml_documents.get(relative)

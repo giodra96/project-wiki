@@ -2,6 +2,8 @@
 
 The canonical machine-readable contract is [`schema/project-wiki.yml`](../schema/project-wiki.yml). This reference explains the responsibilities, linking rules, and lifecycle policies behind that contract. Create the full structure for every project; unused files may remain empty with `status: placeholder` until they become useful.
 
+For a previously absent `.project-wiki/`, use `scripts/wiki_scaffold.py create`. Its `scaffold_contract` assigns exactly one recipe to every canonical required file, generates only non-authoritative placeholder content, validates recipe-specific ID/type/path expectations, then runs the general wiki validator before exclusive publication. The helper refuses existing targets and is not a migration or repair tool; use `maintain` for existing, partial, or legacy wikis.
+
 ## Contract Routing
 
 Use [`schema/project-wiki.yml`](../schema/project-wiki.yml) for exact tree entries, frontmatter fields, document types, status domains, confidence values, ID patterns, generated values, and artifact names. This reference explains the meaning and lifecycle of those structures without duplicating their complete machine-readable definitions.
@@ -34,7 +36,7 @@ During `maintain`, compare `schema_version` with the current schema version decl
 
 Product intent comes from explicit business, user, stakeholder, meeting, issue, ticket, chat, or imported requirements sources. Implemented behavior discovered in code belongs in `technical/` unless an explicit source confirms it as a requirement. Unconfirmed code-inferred requirements belong in `requirements/open-questions.md`, not in functional or non-functional requirement files. Requirement files must not store observed implementation facts, technical constraints, concerns, or candidate-area lists merely because they look requirement-like.
 
-`functional-requirements.md` and `non-functional-requirements.md` are overview/routing files by default. Small projects may keep requirements directly in them, while larger projects may add project-specific topic files under `functional/` and `non-functional/`.
+`requirements/INDEX.md`, `requirements/functional/INDEX.md`, and `requirements/non-functional/INDEX.md` are routing-only. Atomic functional and non-functional requirements live exclusively in project-specific topic files under `functional/` and `non-functional/`, even for small projects.
 
 `changes/` preserves lightweight historical changes after the initial plan: change requests, additional requirements, scope shifts, and architectural decisions.
 
@@ -64,15 +66,23 @@ Use `sources/inbox/` only as a drop zone for real source documents. Human instru
 
 ## Requirements Topic Scaling
 
-Requirements use progressive topic splitting. Do not predefine product areas or create speculative requirement topic files.
+Do not predefine speculative product areas. Create a topic file only after an explicit source establishes a stable requirement area. A small project may use one concise topic such as `functional/core.md` or `non-functional/quality.md`; it must not place atomic records in an index.
 
-Use `requirements/functional-requirements.md` and `requirements/non-functional-requirements.md` as overview/routing files. For small projects, they may contain requirements directly.
+Each family index links to its topic files and contains no `REQ-*`, `NFR-*`, `CON-*`, or other embedded records. Update the family index, `requirements/INDEX.md`, `REGISTRY.yml`, and traceability whenever topics change.
 
-When a stable project-specific requirement topic accumulates enough related requirements that an overview becomes noisy, create a dedicated topic file under `requirements/functional/` or `requirements/non-functional/`, move the related requirements there, leave a concise routing summary in the overview, and update `requirements/INDEX.md`, `REGISTRY.yml`, and traceability maps.
+Store `REQ-*` only under `requirements/functional/`, `NFR-*` only under `requirements/non-functional/`, and `CON-*` only in `requirements/constraints.md`.
 
-Create a topic file only when it improves retrieval, reduces context load, or clarifies ownership/traceability. Do not apply this splitting policy to `technical/`, `implementation/`, `traceability/`, `glossary/`, `changes/`, `alerts/`, `logs/`, `sources/`, or `intake/` by default; those sections already have their own structure.
+`traceability/requirement-evidence.yml` is the machine-facing source of truth for atomic requirement provenance:
 
-Functional and non-functional overview files should use the same structure when requirements are still unconfirmed: current state, routing to relevant `technical/` docs and `open-questions.md`, then a placeholder note. Do not add `Candidate Areas Requiring Confirmation` sections to either overview file.
+```yaml
+version: 1
+records:
+  REQ-001:
+    - DOCIN-YYYYMMDD-001-CH-001
+    - DOCIN-YYYYMMDD-001-CH-002
+```
+
+Use full chunk IDs, one explicit entry per edge, with no ranges or duplicates. Keep chunk IDs and paths out of readable REQ/NFR/CON bodies; non-intake source paths remain valid elsewhere. The human requirement map is derived from this sidecar, and integrated ledger targets must match it bidirectionally.
 
 ## Always-On Instruction Files
 
@@ -211,7 +221,7 @@ Each section `INDEX.md` must include:
 
 `intake/` stores document extraction artifacts for provenance. Do not route normal coding tasks into intake documents.
 
-Status values are defined in the schema manifest. Use [Document ingestion](./document-ingestion.md#intake-status) for lifecycle meaning, extraction, chunk review, and direct-update vs `review.md` rules.
+Status values are defined in the schema manifest. Use [Document ingestion](./document-ingestion.md#intake-status) for lifecycle meaning, extraction, chunk review, and direct-integration vs blocking-review rules.
 
 ## Source Document Policy
 
@@ -259,7 +269,7 @@ Use [Alert Workflow](./maintenance-workflows.md#alert-workflow) for creation and
 
 ## Suggested Discovery Policy
 
-Suggested follow-up questions, missing source material, and risky assumptions are discovery aids, not automatic tasks. Use [Semantic Lint Workflow](./maintenance-workflows.md#semantic-lint-workflow) and [Document ingestion](./document-ingestion.md#direct-update-vs-reviewmd) for promotion rules.
+Suggested follow-up questions, missing source material, and risky assumptions are discovery aids, not automatic tasks. Use [Semantic Lint Workflow](./maintenance-workflows.md#semantic-lint-workflow) and [Direct Integration vs Blocking Review](./document-ingestion.md#direct-integration-vs-blocking-review) for promotion and escalation rules.
 
 ## Open Questions Policy
 

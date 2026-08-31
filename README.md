@@ -24,7 +24,7 @@ Turn requirements, decisions, code knowledge, and project history into an indexe
 
 <p align="center">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg"></a>
-  <img alt="Wiki schema 1.4.0" src="https://img.shields.io/badge/wiki_schema-1.4.0-355c7d">
+  <img alt="Wiki schema 1.5.0" src="https://img.shields.io/badge/wiki_schema-1.5.0-355c7d">
   <img alt="Five project wiki workflows" src="https://img.shields.io/badge/workflows-5-2f855a">
   <img alt="IDE neutral agent skill" src="https://img.shields.io/badge/agent_skill-IDE--neutral-6b7280">
   <img alt="Markdown based storage" src="https://img.shields.io/badge/storage-Markdown-111827?logo=markdown">
@@ -167,11 +167,11 @@ Project Wiki is built around three distinct architectural layers:
 
 ### Skill Layout
 
-- `SKILL.md` is the runtime entrypoint.
+- `SKILL.md` is the runtime entrypoint and links directly to the focused workflow for each mode or automatic trigger.
 - `schema/project-wiki.yml` is the machine-readable contract.
-- `references/` owns workflow, structure, and ingestion guidance.
+- `references/` owns focused workflow, structure, and ingestion guidance.
 - `assets/document-templates.md` routes to focused, copyable template catalogs.
-- `scripts/` provides inbox deduplication, document extraction, structural validation, and contract drift checks.
+- `scripts/` provides exclusive new-wiki scaffolding, inbox deduplication, document extraction, structural validation, and contract drift checks.
 
 ## Command Modes
 
@@ -194,6 +194,8 @@ These are hints, not a strict CLI parser. In Copilot, you can invoke the skill w
 You do not have to use these exact argument hints for the skill to be useful. They are invocation hints for explicit wiki-management tasks. The skill can still be selected by an agent when your request matches its description, such as asking to document requirements, update the project knowledge base, sync manual code changes, or implement code in a repository that already has `.project-wiki/`.
 
 During `init` and `scan`, the skill also installs repository-level always-on instructions so future coding tasks keep using the wiki even when the user does not explicitly invoke the skill.
+
+When `.project-wiki/` is absent, `init` and the first `scan` use `wiki_scaffold.py` to generate the fixed canonical skeleton in staging, validate it, and publish it without replacing an existing target. A successful scaffold is not a completed initialization: project identity, code understanding, traceability, always-on instructions, and the final audit entry remain agent-owned semantic work.
 
 ## Automatic Behavior
 
@@ -219,13 +221,16 @@ The complete structure is always created. Files that are not useful yet can rema
 |-- STATUS.md             # Current milestone, active work, and blockers
 |-- REGISTRY.yml          # Machine-readable catalog of all wiki documents
 |-- WIKI_VERSION.yml      # Applied schema version tracker
-|-- requirements/         # Functional and non-functional specifications
+|-- requirements/         # Product intent and routing
+|   |-- functional/       # Functional topic index and atomic REQ records
+|   `-- non-functional/   # Non-functional topic index and atomic NFR records
 |-- changes/
 |   |-- requests/         # Agile Change Requests (CRs)
 |   `-- decisions/        # Architectural Decision Records (ADRs)
 |-- technical/            # System architecture and component technical docs
 |-- implementation/       # Work breakdowns, scans, and sync reports
 |-- traceability/         # Requirement-to-code traceability matrices
+|   `-- requirement-evidence.yml  # Machine-facing atomic provenance
 |-- sources/
 |   `-- inbox/            # Drop zone for external raw documents
 |-- intake/               # Extracted artifacts and chunks from ingested docs
@@ -282,18 +287,19 @@ Source inbox registry checks and wiki validation require PyYAML; wiki link and h
 python3 -m pip install -r /path/to/project-wiki/scripts/requirements.txt
 ```
 
-The intake workflow, supported formats, chunking behavior, review gating, and status semantics live in [references/document-ingestion.md](references/document-ingestion.md). The complete `review.md` body lives in [assets/intake-source-templates.md](assets/intake-source-templates.md#document-intake-review), while source inbox actions live in [references/update-workflows.md](references/update-workflows.md#source-inbox-workflow).
+The intake workflow, supported formats, chunking behavior, direct-integration policy, blocking review gate, and status semantics live in [references/document-ingestion.md](references/document-ingestion.md). The focused `review.md` body lives in [assets/intake-source-templates.md](assets/intake-source-templates.md#document-intake-review), while source inbox actions live in [references/update-workflows.md](references/update-workflows.md#source-inbox-workflow).
 
-Each intake document contains provenance in `source-info.yml`, routing in `intake-report.md`, a lightweight `chunks.json` manifest, exhaustive review coverage in `review-progress.yml`, progressively readable full-text files under `chunks/`, and a lightweight extraction index in `extracted.md`.
+Each intake document contains provenance in `source-info.yml`, compact routing in `intake-report.md`, a machine-facing `chunks.json` manifest, exhaustive review coverage in `review-progress.yml`, full-text files under `chunks/`, and a compact extraction index in `extracted.md`.
 
-For large documents, agents process every manifest chunk in batches. Hints may prioritize order but never exclude chunks. Every chunk must be classified or skipped with a reason in `review-progress.yml`; integrated classifications must link to registered wiki IDs.
+Agents use `review_progress.py inspect` for a compact outline and review state, then `view --section` only for reliable source-defined sections or `view --all` whenever structure is unclear or full context matters. After complete coverage, `audit` emits a compact ledger status, summary, and SHA-256 checkpoint; `view --chunks` retrieves only selected source units. Every chunk must still be classified or skipped with a reason; integrated classifications must link to registered wiki IDs.
 
 ## Deterministic Governance
 
 | Helper | Purpose |
 | --- | --- |
+| `wiki_scaffold.py` | Creates and validates the fixed canonical skeleton only when the target wiki is absent; never merges or overwrites |
 | `check_inbox.py` | Hashes inbox documents, detects historical/current duplicates, and returns `process`, `skip`, or `review` |
-| `review_progress.py` | Selects the next incomplete chunk batch and atomically updates exhaustive review coverage |
+| `review_progress.py` | Inspects intake state, checkpoints ledger coverage, renders selected source views, and applies ledger updates atomically |
 | `validate_wiki.py` | Validates tree, YAML/JSON, frontmatter, IDs, registries, paths, links, anchors, and intake artifacts |
 | `check_contracts.py` | Prevents drift among the manifest, README, workflows, templates, and CI-bound documentation |
 
@@ -307,12 +313,13 @@ The README is an orientation guide. The manifest is canonical for machine-readab
 | --- | --- |
 | Machine schema version, tree, frontmatter fields, statuses, and ID patterns | [schema/project-wiki.yml](schema/project-wiki.yml) |
 | Human structure, registry, linking, and lifecycle policy | [references/wiki-structure.md](references/wiki-structure.md) |
-| Workflow routing by mode or automatic trigger | [references/workflows.md](references/workflows.md) |
+| Runtime routing by mode or automatic trigger | [SKILL.md](SKILL.md) |
 | Automatic context, initialization, update/intake, sync, and maintenance procedures | [references/automatic-workflows.md](references/automatic-workflows.md), [references/initialization-workflows.md](references/initialization-workflows.md), [references/update-workflows.md](references/update-workflows.md), [references/synchronization-workflow.md](references/synchronization-workflow.md), [references/maintenance-workflows.md](references/maintenance-workflows.md) |
-| External document intake, chunking, direct update vs `review.md`, review shape | [references/document-ingestion.md](references/document-ingestion.md) |
+| External document intake, chunking, direct integration, blocking review decisions | [references/document-ingestion.md](references/document-ingestion.md) |
 | Template routing by artifact family | [assets/document-templates.md](assets/document-templates.md) |
 | Copyable core, requirement/change, technical/implementation, intake/source, and governance templates | [assets/core-templates.md](assets/core-templates.md), [assets/requirements-change-templates.md](assets/requirements-change-templates.md), [assets/technical-implementation-templates.md](assets/technical-implementation-templates.md), [assets/intake-source-templates.md](assets/intake-source-templates.md), [assets/governance-templates.md](assets/governance-templates.md) |
 | Documentation and template drift checks | [scripts/check_contracts.py](scripts/check_contracts.py) |
+| New-wiki scaffold CLI | [scripts/wiki_scaffold.py](scripts/wiki_scaffold.py) |
 | Source inbox duplicate preflight and CLI options | [scripts/check_inbox.py](scripts/check_inbox.py) |
 | Extraction implementation and CLI options | [scripts/ingest_document.py](scripts/ingest_document.py) |
 | Deterministic wiki structure validation and CLI options | [scripts/validate_wiki.py](scripts/validate_wiki.py) |

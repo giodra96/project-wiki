@@ -94,6 +94,78 @@ class WikiValidatorTests(unittest.TestCase):
         registry_path.write_text(yaml.safe_dump(source_registry, sort_keys=False), encoding="utf-8")
         return archived, registry_path, source_registry
 
+    def add_atomic_requirement(self, chunk_id: str, *, evidence_chunk_id: str | None = None) -> None:
+        topic_path = self.root / "requirements" / "functional" / "authentication.md"
+        evidence = evidence_chunk_id or chunk_id
+        topic_path.write_text(
+            "\n".join(
+                [
+                    "---",
+                    "id: REQ-TOPIC-20260820-001",
+                    "type: requirements-topic",
+                    "status: active",
+                    "title: Authentication",
+                    "created: 2026-08-20",
+                    "updated: 2026-08-20",
+                    "tags: [requirements, functional]",
+                    "related: []",
+                    "source_paths: []",
+                    "confidence: confirmed",
+                    "---",
+                    "",
+                    "# Authentication",
+                    "",
+                    '<a id="req-001"></a>',
+                    "",
+                    "## REQ-001 - User Authentication",
+                    "",
+                    "Status: active",
+                    "Tags: [authentication]",
+                    "Related: []",
+                    "Confidence: confirmed",
+                    "",
+                    "### Statement",
+                    "",
+                    "The product shall authenticate users.",
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        registry_path = self.root / "REGISTRY.yml"
+        registry = yaml.safe_load(registry_path.read_text(encoding="utf-8"))
+        registry["documents"].extend(
+            [
+                {
+                    "id": "REQ-TOPIC-20260820-001",
+                    "type": "requirements-topic",
+                    "title": "Authentication",
+                    "path": "requirements/functional/authentication.md",
+                    "status": "active",
+                    "tags": ["requirements", "functional"],
+                    "related": [],
+                    "source_paths": [],
+                    "confidence": "confirmed",
+                },
+                {
+                    "id": "REQ-001",
+                    "type": "requirement",
+                    "title": "User Authentication",
+                    "path": "requirements/functional/authentication.md#req-001",
+                    "status": "active",
+                    "tags": ["authentication"],
+                    "related": [],
+                    "source_paths": [],
+                    "confidence": "confirmed",
+                },
+            ]
+        )
+        registry_path.write_text(yaml.safe_dump(registry, sort_keys=False), encoding="utf-8")
+        evidence_path = self.root / "traceability" / "requirement-evidence.yml"
+        evidence_payload = yaml.safe_load(evidence_path.read_text(encoding="utf-8"))
+        evidence_payload["records"]["REQ-001"] = [evidence]
+        evidence_path.write_text(yaml.safe_dump(evidence_payload, sort_keys=False), encoding="utf-8")
+
     def test_complete_canonical_wiki_passes_without_findings(self) -> None:
         report = validate_wiki.validate_wiki(self.root)
 
@@ -323,13 +395,13 @@ class WikiValidatorTests(unittest.TestCase):
         self.assertFalse(any(finding.path == "INDEX.md" for finding in findings))
 
     def test_registry_fragment_must_identify_the_matching_embedded_record(self) -> None:
-        requirements = self.root / "requirements" / "functional-requirements.md"
+        requirements = self.root / "requirements" / "functional" / "authentication.md"
         requirements.write_text(
             "\n".join(
                 [
                     "---",
-                    "id: DOC-REQS",
-                    "type: note",
+                    "id: REQ-TOPIC-20260820-001",
+                    "type: requirements-topic",
                     "status: active",
                     "title: Requirements",
                     "created: 2026-08-20",
@@ -360,10 +432,23 @@ class WikiValidatorTests(unittest.TestCase):
         registry = yaml.safe_load(registry_path.read_text(encoding="utf-8"))
         registry["documents"].append(
             {
+                "id": "REQ-TOPIC-20260820-001",
+                "type": "requirements-topic",
+                "title": "Requirements",
+                "path": "requirements/functional/authentication.md",
+                "status": "active",
+                "tags": [],
+                "related": [],
+                "source_paths": [],
+                "confidence": "confirmed",
+            }
+        )
+        registry["documents"].append(
+            {
                 "id": "REQ-001",
                 "type": "api",
                 "title": "First",
-                "path": "requirements/functional-requirements.md#req-002",
+                "path": "requirements/functional/authentication.md#req-002",
                 "status": "active",
                 "tags": [],
                 "related": [],
@@ -376,7 +461,7 @@ class WikiValidatorTests(unittest.TestCase):
                 "id": "REQ-002",
                 "type": "requirement",
                 "title": "Second",
-                "path": "requirements/functional-requirements.md#req-002",
+                "path": "requirements/functional/authentication.md#req-002",
                 "status": "active",
                 "tags": [],
                 "related": [],
@@ -394,20 +479,56 @@ class WikiValidatorTests(unittest.TestCase):
         self.assertTrue(any(finding.code == "registry-embedded-status-mismatch" and "REQ-001" in finding.message for finding in findings))
 
     def test_data_id_attribute_does_not_create_an_anchor(self) -> None:
-        requirements = self.root / "requirements" / "functional-requirements.md"
+        requirements = self.root / "requirements" / "functional" / "authentication.md"
         requirements.write_text(
-            requirements.read_text(encoding="utf-8")
-            + '\n<a data-id="req-001"></a>\n\n## REQ-001 - Requirement\n\nStatus: active\n',
+            "\n".join(
+                [
+                    "---",
+                    "id: REQ-TOPIC-20260820-001",
+                    "type: requirements-topic",
+                    "status: active",
+                    "title: Authentication",
+                    "created: 2026-08-20",
+                    "updated: 2026-08-20",
+                    "tags: []",
+                    "related: []",
+                    "source_paths: []",
+                    "confidence: confirmed",
+                    "---",
+                    "",
+                    "# Authentication",
+                    "",
+                    '<a data-id="req-001"></a>',
+                    "",
+                    "## REQ-001 - Requirement",
+                    "",
+                    "Status: active",
+                    "",
+                ]
+            ),
             encoding="utf-8",
         )
         registry_path = self.root / "REGISTRY.yml"
         registry = yaml.safe_load(registry_path.read_text(encoding="utf-8"))
         registry["documents"].append(
             {
+                "id": "REQ-TOPIC-20260820-001",
+                "type": "requirements-topic",
+                "title": "Authentication",
+                "path": "requirements/functional/authentication.md",
+                "status": "active",
+                "tags": [],
+                "related": [],
+                "source_paths": [],
+                "confidence": "confirmed",
+            }
+        )
+        registry["documents"].append(
+            {
                 "id": "REQ-001",
                 "type": "requirement",
                 "title": "Requirement",
-                "path": "requirements/functional-requirements.md#req-001",
+                "path": "requirements/functional/authentication.md#req-001",
                 "status": "active",
                 "tags": [],
                 "related": [],
@@ -426,6 +547,61 @@ class WikiValidatorTests(unittest.TestCase):
 
         self.assertIsNone(validator.heading_id("REQ-0010 - Not a valid REQ-001 token"))
         self.assertEqual(validator.heading_id("REQ-001 - Valid"), "REQ-001")
+
+    def test_embedded_title_is_extracted_after_actual_id_position(self) -> None:
+        validator = validate_wiki.WikiValidator(self.root)
+
+        self.assertEqual(
+            validator.heading_title("REQ-001 - User authentication", "REQ-001"),
+            "User authentication",
+        )
+        self.assertEqual(
+            validator.heading_title(
+                "[2026-08-25] scan | WLOG-20260825-001 | Initial Repository Scan",
+                "WLOG-20260825-001",
+            ),
+            "Initial Repository Scan",
+        )
+
+    def test_wiki_log_registry_title_uses_text_after_embedded_id(self) -> None:
+        log_path = self.root / "logs" / "wiki-log-2026-08.md"
+        log_path.write_text(
+            "\n".join(
+                [
+                    "# Wiki Log 2026-08",
+                    "",
+                    '<a id="wlog-20260825-001"></a>',
+                    "",
+                    "## [2026-08-25] scan | WLOG-20260825-001 | Initial Repository Scan",
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        registry_path = self.root / "REGISTRY.yml"
+        registry = yaml.safe_load(registry_path.read_text(encoding="utf-8"))
+        registry["documents"].append(
+            {
+                "id": "WLOG-20260825-001",
+                "type": "note",
+                "title": "Initial Repository Scan",
+                "path": "logs/wiki-log-2026-08.md#wlog-20260825-001",
+                "status": "active",
+                "tags": ["log", "scan"],
+                "related": [],
+                "source_paths": [],
+                "confidence": "confirmed",
+            }
+        )
+        registry_path.write_text(yaml.safe_dump(registry, sort_keys=False), encoding="utf-8")
+
+        valid_codes = self.codes()
+        registry["documents"][-1]["title"] = "| WLOG-20260825-001 | Initial Repository Scan"
+        registry_path.write_text(yaml.safe_dump(registry, sort_keys=False), encoding="utf-8")
+        invalid_codes = self.codes()
+
+        self.assertNotIn("registry-embedded-title-mismatch", valid_codes)
+        self.assertIn("registry-embedded-title-mismatch", invalid_codes)
 
     def test_real_intake_source_text_is_not_interpreted_as_canonical_structure(self) -> None:
         source = Path(self.temporary_directory.name) / "source.md"
@@ -574,6 +750,27 @@ class WikiValidatorTests(unittest.TestCase):
 
         self.assertIn("intake-review-progress-incomplete", self.codes())
 
+    def test_legacy_intake_report_body_status_must_match_source_info(self) -> None:
+        document_root = self.ingest_source("# Source\n\nContent\n")
+        report_path = document_root / "intake-report.md"
+        report = report_path.read_text(encoding="utf-8")
+        report_path.write_text(
+            report.replace("## Extraction Summary", "- Intake status: `active`\n\n## Extraction Summary"),
+            encoding="utf-8",
+        )
+
+        self.assertNotIn("intake-report-body-status-mismatch", self.codes())
+
+        report_path.write_text(
+            report_path.read_text(encoding="utf-8").replace(
+                "- Intake status: `active`",
+                "- Intake status: `integrated`",
+            ),
+            encoding="utf-8",
+        )
+
+        self.assertIn("intake-report-body-status-mismatch", self.codes())
+
     def test_skipped_review_progress_entry_requires_reason(self) -> None:
         document_root = self.ingest_source("# Source\n\nContent\n")
         progress_path = document_root / "review-progress.yml"
@@ -613,7 +810,10 @@ class WikiValidatorTests(unittest.TestCase):
         progress_path.write_text(yaml.safe_dump(progress, sort_keys=False), encoding="utf-8")
         self.assertIn("intake-review-progress-target-missing", self.codes())
 
-        progress["chunks"][0]["target_ids"] = [self.ids["PROJECT.md"]]
+        progress["chunks"][0].update({
+            "classifications": ["technical-documentation"],
+            "target_ids": [self.ids["PROJECT.md"]],
+        })
         progress_path.write_text(yaml.safe_dump(progress, sort_keys=False), encoding="utf-8")
         ledger_findings = [
             finding
@@ -621,6 +821,159 @@ class WikiValidatorTests(unittest.TestCase):
             if finding.path.endswith("review-progress.yml")
         ]
         self.assertEqual(ledger_findings, [])
+
+    def test_integrated_requirement_requires_atomic_target_and_matching_evidence(self) -> None:
+        document_root = self.ingest_source("# Source\n\nThe product shall authenticate users.\n")
+        manifest = json.loads((document_root / "chunks.json").read_text(encoding="utf-8"))
+        chunk_id = manifest["chunks"][0]["id"]
+        progress_path = document_root / "review-progress.yml"
+        progress = yaml.safe_load(progress_path.read_text(encoding="utf-8"))
+        progress["review_status"] = "complete"
+        progress["summary"].update({"pending": 0, "classified": 1})
+        progress["chunks"][0].update({
+            "status": "classified",
+            "classifications": ["requirement"],
+            "target_ids": [self.ids["PROJECT.md"]],
+        })
+        progress_path.write_text(yaml.safe_dump(progress, sort_keys=False), encoding="utf-8")
+        source_info_path = document_root / "source-info.yml"
+        source_info = yaml.safe_load(source_info_path.read_text(encoding="utf-8"))
+        source_info["status"] = "integrated"
+        source_info_path.write_text(yaml.safe_dump(source_info, sort_keys=False), encoding="utf-8")
+
+        self.assertIn("intake-review-progress-atomic-target-required", self.codes())
+
+        self.add_atomic_requirement(chunk_id)
+        progress["chunks"][0]["target_ids"] = ["REQ-001", "REQ-TOPIC-20260820-001"]
+        progress_path.write_text(yaml.safe_dump(progress, sort_keys=False), encoding="utf-8")
+        relevant = {
+            finding.code
+            for finding in validate_wiki.validate_wiki(self.root).findings
+            if finding.path.endswith("review-progress.yml")
+        }
+        self.assertNotIn("intake-review-progress-atomic-target-required", relevant)
+        self.assertNotIn("intake-review-progress-evidence-mismatch", relevant)
+
+    def test_integrated_requirement_rejects_evidence_ledger_mismatch(self) -> None:
+        document_root = self.ingest_source("# Source\n\nThe product shall authenticate users.\n")
+        manifest = json.loads((document_root / "chunks.json").read_text(encoding="utf-8"))
+        chunk_id = manifest["chunks"][0]["id"]
+        self.add_atomic_requirement(chunk_id, evidence_chunk_id="DOCIN-20260820-999-CH-001")
+        progress_path = document_root / "review-progress.yml"
+        progress = yaml.safe_load(progress_path.read_text(encoding="utf-8"))
+        progress["review_status"] = "complete"
+        progress["summary"].update({"pending": 0, "classified": 1})
+        progress["chunks"][0].update({
+            "status": "classified",
+            "classifications": ["requirement"],
+            "target_ids": ["REQ-001"],
+        })
+        progress_path.write_text(yaml.safe_dump(progress, sort_keys=False), encoding="utf-8")
+        source_info_path = document_root / "source-info.yml"
+        source_info = yaml.safe_load(source_info_path.read_text(encoding="utf-8"))
+        source_info["status"] = "integrated"
+        source_info_path.write_text(yaml.safe_dump(source_info, sort_keys=False), encoding="utf-8")
+
+        codes = self.codes()
+
+        self.assertIn("requirement-evidence-chunk-missing", codes)
+        self.assertIn("intake-review-progress-evidence-mismatch", codes)
+
+    def test_uniform_overview_only_requirement_integration_is_rejected(self) -> None:
+        document_root = self.ingest_source(
+            "## One\n\nFirst requirement.\n\n"
+            "## Two\n\nSecond requirement.\n\n"
+            "## Three\n\nThird requirement.\n",
+            max_words=80,
+        )
+        progress_path = document_root / "review-progress.yml"
+        progress = yaml.safe_load(progress_path.read_text(encoding="utf-8"))
+        progress["review_status"] = "complete"
+        progress["summary"].update({"pending": 0, "classified": 3})
+        for entry in progress["chunks"]:
+            entry.update({
+                "status": "classified",
+                "classifications": ["requirement"],
+                "target_ids": [self.ids["PROJECT.md"]],
+                "notes": "Requirement candidate reviewed.",
+            })
+        progress_path.write_text(yaml.safe_dump(progress, sort_keys=False), encoding="utf-8")
+        source_info_path = document_root / "source-info.yml"
+        source_info = yaml.safe_load(source_info_path.read_text(encoding="utf-8"))
+        source_info["status"] = "integrated"
+        source_info_path.write_text(yaml.safe_dump(source_info, sort_keys=False), encoding="utf-8")
+
+        findings = [
+            finding
+            for finding in validate_wiki.validate_wiki(self.root).findings
+            if finding.code == "intake-review-progress-atomic-target-required"
+        ]
+
+        self.assertEqual(len(findings), 3)
+
+    def test_indexes_cannot_contain_atomic_records(self) -> None:
+        index_path = self.root / "requirements" / "functional" / "INDEX.md"
+        index_path.write_text(
+            index_path.read_text(encoding="utf-8")
+            + "\n<a id=\"req-001\"></a>\n\n## REQ-001 - Invalid Index Record\n\nStatus: active\n",
+            encoding="utf-8",
+        )
+
+        codes = self.codes()
+
+        self.assertIn("index-embedded-record-invalid", codes)
+        self.assertIn("atomic-record-location-invalid", codes)
+
+    def test_atomic_evidence_rejects_ranges_and_duplicates(self) -> None:
+        self.add_atomic_requirement("DOCIN-20260820-001-CH-001")
+        evidence_path = self.root / "traceability" / "requirement-evidence.yml"
+        payload = yaml.safe_load(evidence_path.read_text(encoding="utf-8"))
+        payload["records"]["REQ-001"] = [
+            "DOCIN-20260820-001-CH-001",
+            "DOCIN-20260820-001-CH-001",
+        ]
+        evidence_path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+        self.assertIn("requirement-evidence-chunks-invalid", self.codes())
+
+        payload["records"]["REQ-001"] = [
+            "DOCIN-20260820-001-CH-001 through DOCIN-20260820-001-CH-003"
+        ]
+        evidence_path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+        self.assertIn("requirement-evidence-chunk-id-invalid", self.codes())
+
+    def test_inline_atomic_evidence_is_rejected(self) -> None:
+        self.add_atomic_requirement("DOCIN-20260820-001-CH-001")
+        topic_path = self.root / "requirements" / "functional" / "authentication.md"
+        content = topic_path.read_text(encoding="utf-8")
+        topic_path.write_text(
+            content.replace("Confidence: confirmed", "Evidence: [DOCIN-20260820-001-CH-001]\nConfidence: confirmed", 1),
+            encoding="utf-8",
+        )
+
+        self.assertIn("embedded-inline-evidence-invalid", self.codes())
+
+    def test_atomic_intake_chunk_reference_is_rejected_but_code_path_is_allowed(self) -> None:
+        document_root = self.ingest_source("# Source\n\nThe product shall authenticate users.\n")
+        manifest = json.loads((document_root / "chunks.json").read_text(encoding="utf-8"))
+        chunk_id = manifest["chunks"][0]["id"]
+        self.add_atomic_requirement(chunk_id)
+        topic_path = self.root / "requirements" / "functional" / "authentication.md"
+        content = topic_path.read_text(encoding="utf-8")
+        intake_id, chunk_sequence = chunk_id.rsplit("-CH-", 1)
+        intake_path = f".project-wiki/intake/documents/{intake_id}/chunks/CH-{chunk_sequence}.md"
+        topic_path.write_text(
+            content.replace("Related: []\nConfidence: confirmed", f"Related: []\nSource paths: [{intake_path}]\nConfidence: confirmed"),
+            encoding="utf-8",
+        )
+
+        self.assertIn("embedded-intake-chunk-reference-invalid", self.codes())
+
+        topic_path.write_text(
+            topic_path.read_text(encoding="utf-8").replace(intake_path, "src/authentication.py"),
+            encoding="utf-8",
+        )
+
+        self.assertNotIn("embedded-intake-chunk-reference-invalid", self.codes())
 
     def test_source_registry_invalid_status_hash_and_current_path_are_reported(self) -> None:
         source_registry = {

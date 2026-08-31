@@ -285,6 +285,30 @@ class SourceInboxCheckTests(unittest.TestCase):
         self.assertEqual(decision.reason, "intake-history-match")
         self.assertEqual(decision.intake_ids, ("DOCIN-20260801-001",))
 
+    def test_relative_copied_source_path_is_resolved_inside_intake(self) -> None:
+        content = "Previously ingested and copied content"
+        source = self.write_source("renamed.md", content)
+        intake_id = "DOCIN-20260801-001"
+        self.write_intake_history(
+            intake_id=intake_id,
+            source_hash=check_inbox.sha256_file(source),
+            source_path="/original/location/source.md",
+            copied_source_content=content,
+        )
+        source_info = self.wiki_root / "intake" / "documents" / intake_id / "source-info.yml"
+        source_info.write_text(
+            source_info.read_text(encoding="utf-8").replace(
+                f'"{(source_info.parent / "source.md").as_posix()}"',
+                '"source.md"',
+            ),
+            encoding="utf-8",
+        )
+
+        report = check_inbox.check_inbox(self.wiki_root)
+
+        self.assertEqual(report.decisions[0].action, "skip")
+        self.assertEqual(report.decisions[0].reason, "intake-history-match")
+
     def test_intake_history_overrides_stale_pending_registry_status(self) -> None:
         source = self.write_source("source.md", "Already ingested content")
         source_hash = check_inbox.sha256_file(source)

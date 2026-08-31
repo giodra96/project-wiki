@@ -38,7 +38,7 @@ jobs:
         run: python scripts/check_contracts.py
 
       - name: Compile Python sources
-        run: python -m py_compile scripts/check_contracts.py scripts/check_inbox.py scripts/ingest_document.py scripts/review_progress.py scripts/schema_contract.py scripts/validate_wiki.py tests/test_check_inbox.py tests/test_ingest_document.py tests/test_ingest_document_units.py tests/test_review_progress.py tests/test_schema_contract.py tests/test_validate_wiki.py tests/wiki_fixtures.py
+        run: python -m py_compile scripts/check_contracts.py scripts/check_inbox.py scripts/ingest_document.py scripts/review_progress.py scripts/schema_contract.py scripts/validate_wiki.py scripts/wiki_scaffold.py tests/test_check_inbox.py tests/test_ingest_document.py tests/test_ingest_document_units.py tests/test_review_progress.py tests/test_schema_contract.py tests/test_validate_wiki.py tests/test_wiki_scaffold.py tests/wiki_fixtures.py
 
       - name: Smoke test helper CLIs
         run: |
@@ -46,4 +46,5 @@ jobs:
           python scripts/check_inbox.py --help
           python scripts/ingest_document.py --help
           python scripts/review_progress.py --help
+          python scripts/wiki_scaffold.py --help
           python scripts/validate_wiki.py --help

@@ -57,6 +57,128 @@ class SchemaContractTests(unittest.TestCase):
         self.assertTrue(report.valid)
         self.assertEqual(report.findings, ())
 
+    def test_scaffold_contract_covers_every_required_file_with_expected_core_roles(self) -> None:
+        self.assertEqual(set(self.contract.scaffold.files), set(self.contract.required_files))
+        project = self.contract.scaffold.files["PROJECT.md"]
+        security = self.contract.scaffold.files["technical/security.md"]
+        self.assertEqual((project.recipe, project.document_id, project.document_type), (
+            "placeholder-document",
+            "PROJECT",
+            "project",
+        ))
+        self.assertEqual((security.recipe, security.document_id, security.document_type), (
+            "placeholder-document",
+            "TECH-SECURITY",
+            "technical",
+        ))
+        self.assertTrue(all(
+            recipe.recipe != "placeholder-document"
+            or (recipe.document_id is not None and recipe.document_type is not None)
+            for recipe in self.contract.scaffold.files.values()
+        ))
+
+    def test_skill_routes_each_trigger_to_exact_workflow_anchor(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        skill = (repo_root / "SKILL.md").read_text(encoding="utf-8")
+
+        expected_routes = (
+            ("`init` - Initialize an empty project wiki", "references/initialization-workflows.md", "Init Workflow"),
+            ("`scan` - Scan an existing repository", "references/initialization-workflows.md", "Scan Existing Project Workflow"),
+            ("`update` - Process notes, requirements, meetings, or durable analysis", "references/update-workflows.md", "Update Workflow"),
+            ("`sync` - Reconcile code changed outside the current agent task", "references/synchronization-workflow.md", "Sync Workflow"),
+            ("`maintain` - Validate, migrate, repair, or semantically lint a wiki", "references/maintenance-workflows.md", "Maintain Workflow"),
+            ("Before implementing, modifying, debugging, refactoring, testing, documenting, or planning code when `.project-wiki/INDEX.md` exists", "references/automatic-workflows.md", "Automatic Context Preflight"),
+            ("After agent-made source changes", "references/automatic-workflows.md", "Automatic Post-Implementation Wiki Update"),
+        )
+        for trigger, relative_path, heading in expected_routes:
+            anchor = validate_wiki.github_slug(heading)
+            expected_row = f"| {trigger} | [{heading}](./{relative_path}#{anchor}) |"
+            self.assertIn(expected_row, skill)
+            self.assertIn(f"## {heading}", (repo_root / relative_path).read_text(encoding="utf-8"))
+
+        document_route = (
+            "| `update` - Ingest PDF, DOCX, text, or Markdown sources | "
+            "[Document Intake Workflow](./references/update-workflows.md#document-intake-workflow), "
+            "then [Document Ingestion](./references/document-ingestion.md) |"
+        )
+        self.assertIn(document_route, skill)
+        update_workflow = (repo_root / "references" / "update-workflows.md").read_text(encoding="utf-8")
+        self.assertIn("## Document Intake Workflow", update_workflow)
+        self.assertTrue((repo_root / "references" / "document-ingestion.md").is_file())
+        self.assertNotIn("./references/workflows.md", skill)
+        self.assertFalse((repo_root / "references" / "workflows.md").exists())
+
+    def test_update_integrates_by_default_and_reviews_only_blocking_decisions(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        ingestion = (repo_root / "references" / "document-ingestion.md").read_text(encoding="utf-8")
+        update = (repo_root / "references" / "update-workflows.md").read_text(encoding="utf-8")
+        template = (repo_root / "assets" / "intake-source-templates.md").read_text(encoding="utf-8")
+
+        self.assertIn("An explicit `update` request authorizes conservative canonical integration", ingestion)
+        self.assertIn("blocking, auditable human decision", ingestion)
+        self.assertIn("status and confidence, open questions, alerts, blocked records", ingestion)
+        self.assertIn(
+            "Document length, density, number of findings, cross-section impact",
+            ingestion,
+        )
+        self.assertIn("An explicit `update` request authorizes conservative integration by default", update)
+        self.assertIn("## Blocking Decision Needed", template)
+        self.assertIn("## Options And Consequences", template)
+
+        for obsolete_trigger in (
+            "The source is broad or dense",
+            "The update would affect multiple wiki sections",
+            "materially cross-section updates",
+        ):
+            self.assertNotIn(obsolete_trigger, ingestion)
+            self.assertNotIn(obsolete_trigger, update)
+
+    def test_atomic_requirement_template_keeps_intake_evidence_out_of_body(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        templates = (repo_root / "assets" / "requirements-change-templates.md").read_text(encoding="utf-8")
+        requirement_section = templates.split("## Requirement Section", 1)[1].split(
+            "## Requirement Topic File",
+            1,
+        )[0]
+
+        self.assertIn("traceability/requirement-evidence.yml", requirement_section)
+        self.assertNotIn("Source paths:", requirement_section)
+
+    def test_document_update_requires_a_current_explicit_audit_snapshot(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        update = (repo_root / "references" / "update-workflows.md").read_text(encoding="utf-8")
+        ingestion = (repo_root / "references" / "document-ingestion.md").read_text(encoding="utf-8")
+
+        for value in ("audit_status: review-complete", "ledger summary", "SHA-256"):
+            self.assertIn(value, update)
+        self.assertIn("After any ledger correction, rerun `audit`", update)
+        self.assertIn("audit --expect-ledger-sha256 <final-ledger-sha256>", update)
+        self.assertIn("exact SHA-256 of the bytes it read", ingestion)
+        for status in ("review-incomplete", "review-complete"):
+            self.assertIn(status, ingestion)
+        self.assertIn("`audit-skips` is an optional diagnostic", ingestion)
+
+    def test_always_on_protocol_preserves_automatic_contract(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        templates = (repo_root / "assets" / "core-templates.md").read_text(encoding="utf-8")
+        protocol = templates.split("<!-- PROJECT-WIKI:BEGIN -->", 1)[1].split(
+            "<!-- PROJECT-WIKI:END -->", 1
+        )[0]
+
+        for requirement in (
+            ".project-wiki/INDEX.md",
+            "Before implementing, modifying, debugging, refactoring, testing, documenting, or planning code",
+            "After agent-made source changes",
+            "`update` workflow",
+            "`sync`",
+            "`maintain`",
+            "never load PDF/DOCX sources directly into model context",
+            "Record observed behavior in `technical/`; do not infer product requirements from code",
+            "Log every meaningful wiki edit",
+            "Write wiki content in English",
+        ):
+            self.assertIn(requirement, protocol)
+
     def test_ci_runs_contract_checker_and_compiles_contract_modules(self) -> None:
         workflow_path = Path(__file__).resolve().parents[1] / ".github" / "workflows" / "tests.yml"
         workflow = yaml.safe_load(workflow_path.read_text(encoding="utf-8"))
@@ -64,9 +186,12 @@ class SchemaContractTests(unittest.TestCase):
         runs = "\n".join(step.get("run", "") for step in steps)
 
         self.assertIn("python scripts/check_contracts.py", runs)
+        self.assertIn("python scripts/wiki_scaffold.py --help", runs)
         self.assertIn("scripts/check_contracts.py", runs)
         self.assertIn("scripts/schema_contract.py", runs)
+        self.assertIn("scripts/wiki_scaffold.py", runs)
         self.assertIn("tests/test_schema_contract.py", runs)
+        self.assertIn("tests/test_wiki_scaffold.py", runs)
 
     def test_version_reference_drift_is_reported(self) -> None:
         repo_root = self.copy_contract_surface()
@@ -348,6 +473,23 @@ class SchemaContractTests(unittest.TestCase):
                 ),
                 "normalized relative path",
             ),
+            (
+                "missing scaffold recipe",
+                lambda payload: payload["scaffold_contract"]["files"].pop("PROJECT.md"),
+                "scaffold file recipes mismatch",
+            ),
+            (
+                "duplicate scaffold document ID",
+                lambda payload: payload["scaffold_contract"]["files"]["GLOSSARY.md"].__setitem__("id", "PROJECT"),
+                "duplicate scaffold document ID",
+            ),
+            (
+                "wrong scaffold template owner",
+                lambda payload: payload["scaffold_contract"]["files"]["INDEX.md"].__setitem__(
+                    "asset", "assets/governance-templates.md"
+                ),
+                "is not owned by",
+            ),
         ]
         for name, mutate, message in mutations:
             with self.subTest(name=name):
@@ -543,6 +685,7 @@ class SchemaContractTests(unittest.TestCase):
             "sources/ignored": "inputs/ignored",
             "intake/documents": "staging/records",
             "intake/INDEX.md": "staging/INDEX.md",
+            "traceability/requirement-evidence.yml": "traceability/evidence.yml",
         }
         payload["semantic_paths"] = {
             "wiki_version_file": "SCHEMA.yml",
@@ -555,6 +698,7 @@ class SchemaContractTests(unittest.TestCase):
             "intake_root_directory": "staging",
             "intake_documents_directory": "staging/records",
             "intake_index_file": "staging/INDEX.md",
+            "requirement_evidence_file": "traceability/evidence.yml",
         }
         payload["canonical_tree"]["required_directories"] = [
             path_map.get(value, value)
@@ -564,6 +708,10 @@ class SchemaContractTests(unittest.TestCase):
             path_map.get(value, value)
             for value in payload["canonical_tree"]["required_files"]
         ]
+        payload["scaffold_contract"]["files"] = {
+            path_map.get(relative, relative): recipe
+            for relative, recipe in payload["scaffold_contract"]["files"].items()
+        }
         payload["canonical_tree"]["example_files"] = [
             value.replace("intake/documents", "staging/records").replace("sources/processed", "inputs/archive")
             for value in payload["canonical_tree"]["example_files"]

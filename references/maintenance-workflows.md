@@ -31,6 +31,10 @@ The skill's current schema contract comes from `schema/project-wiki.yml`. Human 
 4. If the schema is older or missing, create or update `.project-wiki/maintenance/schema-migration-YYYYMMDD.md` with planned and applied migration actions.
 5. Preserve existing content. Do not delete or overwrite user/project-authored files during schema migration.
 6. Create missing canonical directories and placeholder files from [Wiki structure](./wiki-structure.md), including `sources/`, `analysis/`, `maintenance/`, `alerts/`, monthly `logs/`, and local templates.
+   - For migration from schema 1.4, create `requirements/functional/INDEX.md` and `requirements/non-functional/INDEX.md`.
+   - If legacy `functional-requirements.md` or `non-functional-requirements.md` contains atomic records, move them into evidence-backed topic files only after semantic review; never discard or mechanically regroup them.
+   - If legacy atomic records contain inline or free-text source evidence, migrate verified edges into `traceability/requirement-evidence.yml`; do not infer ambiguous ranges or delete human notes without review.
+   - Remove an empty legacy overview after updating links and registry. If it contains unresolved content, retain it temporarily as `superseded` until migration is complete.
 7. Create or update `.project-wiki/WIKI_VERSION.yml` to the current schema version after migration actions are applied.
 8. Ensure `sources/SOURCE_REGISTRY.yml` exists and uses version `1`.
 9. Ensure logs use monthly `logs/wiki-log-YYYY-MM.md` convention. If old yearly logs exist, migrate entries only when headings are parseable; otherwise leave them in place, mark them legacy, and report the issue.

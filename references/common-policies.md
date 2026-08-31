@@ -39,7 +39,7 @@ After any non-trivial wiki update, verify:
 - `STATUS.md` reflects current active work and unresolved questions.
 - Existing open questions were reconciled before creating new ones when new information arrived.
 - Requirement files contain only confirmed or explicitly sourced product intent; observed implementation facts, technical constraints, concerns, candidate behavior, and code-inferred candidate areas are documented in `technical/` and linked to inferred open questions when product intent needs confirmation.
-- Requirement overview files route to topic files when topic splitting was used; `REGISTRY.yml` paths point to the final requirement anchors.
+- Requirements indexes are routing-only; family indexes route to every topic file, and `REGISTRY.yml` paths point to final atomic anchors.
 - Traceability maps changed when requirements, CRs, ADRs, technical docs, or source paths changed.
 - `logs/wiki-log-YYYY-MM.md` records what changed in the knowledge base and why.
 - Generated or updated project wiki content is written in English, while the chat response uses the user's language.

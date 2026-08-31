@@ -79,12 +79,35 @@ class SemanticPathContract:
     intake_root_directory: str
     intake_documents_directory: str
     intake_index_file: str
+    requirement_evidence_file: str
 
 
 @dataclass(frozen=True)
 class TemplateContract:
     document_type: str
     template_id: str
+
+
+@dataclass(frozen=True)
+class ScaffoldFileRecipe:
+    recipe: str
+    document_id: str | None = None
+    document_type: str | None = None
+    title: str | None = None
+    tags: tuple[str, ...] = ()
+    message: str | None = None
+    asset: str | None = None
+    template: str | None = None
+    replacements: tuple[str, ...] = ()
+    description: str | None = None
+    when_to_read: tuple[str, ...] = ()
+    key_files: tuple[str, ...] = ()
+    placeholders: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class ScaffoldContract:
+    files: dict[str, ScaffoldFileRecipe]
 
 
 @dataclass(frozen=True)
@@ -124,6 +147,7 @@ class SchemaContract:
     standalone_record_directories: frozenset[str]
     template_contracts: dict[str, TemplateContract]
     template_section_inventory: dict[str, tuple[str, ...]]
+    scaffold: ScaffoldContract
     documentation: DocumentationContract
 
     @property
@@ -206,6 +230,7 @@ def load_schema_contract(path: Path | None = None) -> SchemaContract:
             "standalone_record_directories",
             "template_contracts",
             "template_section_inventory",
+            "scaffold_contract",
             "documentation_contract",
         },
         "manifest",
@@ -230,6 +255,7 @@ def load_schema_contract(path: Path | None = None) -> SchemaContract:
     source_workflow_payload = require_mapping(payload, "source_workflow")
     template_contracts_payload = require_mapping(payload, "template_contracts")
     template_inventory_payload = require_mapping(payload, "template_section_inventory")
+    scaffold_payload = require_mapping(payload, "scaffold_contract")
     template_section_inventory = require_string_list_mapping(
         template_inventory_payload,
         "template_section_inventory",
@@ -286,6 +312,7 @@ def load_schema_contract(path: Path | None = None) -> SchemaContract:
         "intake_root_directory",
         "intake_documents_directory",
         "intake_index_file",
+        "requirement_evidence_file",
     }
     require_exact_keys(semantic_paths_payload, semantic_path_fields, "semantic_paths")
     require_exact_keys(tree, {"required_directories", "required_files", "example_files"}, "canonical_tree")
@@ -587,6 +614,16 @@ def load_schema_contract(path: Path | None = None) -> SchemaContract:
     if not set(template_contracts).issubset(inventory_headings):
         raise SchemaContractError("template_contracts headings must be present in template_section_inventory")
 
+    scaffold = parse_scaffold_contract(
+        scaffold_payload,
+        required_files,
+        frozenset(require_string_list(frontmatter, "exempt_paths")),
+        document_type_contracts,
+        pattern_strings,
+        template_section_inventory,
+        semantic_paths,
+    )
+
     return SchemaContract(
         manifest_path=manifest_path,
         manifest_version=require_supported_manifest_version(payload),
@@ -623,6 +660,7 @@ def load_schema_contract(path: Path | None = None) -> SchemaContract:
         standalone_record_directories=frozenset(require_string_list(payload, "standalone_record_directories")),
         template_contracts=template_contracts,
         template_section_inventory=template_section_inventory,
+        scaffold=scaffold,
         documentation=DocumentationContract(
             version_references=require_string_list_mapping(
                 require_mapping(documentation_payload, "version_references"),
@@ -635,6 +673,126 @@ def load_schema_contract(path: Path | None = None) -> SchemaContract:
             intake_artifact_references=artifact_references,
         ),
     )
+
+
+def parse_scaffold_contract(
+    payload: dict[str, Any],
+    required_files: tuple[str, ...],
+    frontmatter_exempt_paths: frozenset[str],
+    document_type_contracts: dict[str, DocumentTypeContract],
+    pattern_strings: dict[str, str],
+    template_section_inventory: dict[str, tuple[str, ...]],
+    semantic_paths: SemanticPathContract,
+) -> ScaffoldContract:
+    require_exact_keys(payload, {"files"}, "scaffold_contract")
+    files_payload = require_mapping(payload, "files")
+    if set(files_payload) != set(required_files):
+        missing = sorted(set(required_files) - set(files_payload))
+        extra = sorted(set(files_payload) - set(required_files))
+        raise SchemaContractError(f"scaffold file recipes mismatch; missing={missing}, extra={extra}")
+    template_owners = {
+        heading: owner
+        for owner, headings in template_section_inventory.items()
+        for heading in headings
+    }
+    recipes: dict[str, ScaffoldFileRecipe] = {}
+    document_ids: set[str] = set()
+    special_paths = {
+        "status": "STATUS.md",
+        "wiki-version": semantic_paths.wiki_version_file,
+        "document-registry": semantic_paths.document_registry_file,
+        "source-registry": semantic_paths.source_registry_file,
+        "requirement-evidence": semantic_paths.requirement_evidence_file,
+    }
+    for raw_path, value in files_payload.items():
+        if not isinstance(raw_path, str) or not isinstance(value, dict):
+            raise SchemaContractError("scaffold files must map relative paths to mappings")
+        relative = require_relative_contract_path({"path": raw_path}, "path")
+        if relative != raw_path:
+            raise SchemaContractError(f"scaffold path {raw_path!r} must be normalized")
+        recipe = require_string(value, "recipe")
+        label = f"scaffold_contract.files.{relative}"
+        if recipe == "placeholder-document":
+            require_exact_keys(value, {"recipe", "id", "type", "title", "tags", "message"}, label)
+            document_id = require_string(value, "id")
+            document_type = require_string(value, "type")
+            if document_type not in document_type_contracts:
+                raise SchemaContractError(f"{label} references unsupported type {document_type!r}")
+            pattern_key = document_type_contracts[document_type].id_pattern
+            if re.fullmatch(pattern_strings[pattern_key], document_id) is None:
+                raise SchemaContractError(f"{label} ID {document_id!r} does not match type {document_type!r}")
+            if document_id in document_ids:
+                raise SchemaContractError(f"duplicate scaffold document ID: {document_id}")
+            document_ids.add(document_id)
+            if Path(relative).suffix.lower() != ".md" or Path(relative).name == "INDEX.md":
+                raise SchemaContractError(f"{label} placeholder document must be a non-index Markdown file")
+            if relative in frontmatter_exempt_paths or relative.startswith("templates/"):
+                raise SchemaContractError(f"{label} cannot target a frontmatter-exempt or template path")
+            recipes[relative] = ScaffoldFileRecipe(
+                recipe=recipe,
+                document_id=document_id,
+                document_type=document_type,
+                title=require_string(value, "title"),
+                tags=tuple(require_string_list(value, "tags")),
+                message=require_string(value, "message"),
+            )
+            continue
+        if recipe in {"rendered-template", "local-template"}:
+            expected_keys = {"recipe", "asset", "template", "replacements"} if recipe == "rendered-template" else {"recipe", "asset", "template"}
+            require_exact_keys(value, expected_keys, label)
+            asset = require_relative_contract_path(value, "asset")
+            template = require_string(value, "template")
+            if template_owners.get(template) != asset:
+                raise SchemaContractError(f"{label} template {template!r} is not owned by {asset!r}")
+            replacements = tuple(require_string_list(value, "replacements")) if recipe == "rendered-template" else ()
+            if set(replacements) - {"date"}:
+                raise SchemaContractError(f"{label} has unsupported replacements")
+            if recipe == "local-template" and not relative.startswith("templates/"):
+                raise SchemaContractError(f"{label} local template must be under templates/")
+            if recipe == "rendered-template" and Path(relative).name != "INDEX.md":
+                raise SchemaContractError(f"{label} rendered template must target an INDEX.md file")
+            recipes[relative] = ScaffoldFileRecipe(
+                recipe=recipe,
+                asset=asset,
+                template=template,
+                replacements=replacements,
+            )
+            continue
+        if recipe == "section-index":
+            require_exact_keys(
+                value,
+                {"recipe", "title", "description", "when_to_read", "key_files", "placeholders"},
+                label,
+            )
+            if Path(relative).name != "INDEX.md":
+                raise SchemaContractError(f"{label} section index must target INDEX.md")
+            recipes[relative] = ScaffoldFileRecipe(
+                recipe=recipe,
+                title=require_string(value, "title"),
+                description=require_string(value, "description"),
+                when_to_read=tuple(require_string_list(value, "when_to_read")),
+                key_files=tuple(require_string_list(value, "key_files")),
+                placeholders=tuple(require_string_list(value, "placeholders")),
+            )
+            continue
+        if recipe == "plain-placeholder":
+            require_exact_keys(value, {"recipe", "title", "message"}, label)
+            if relative not in frontmatter_exempt_paths:
+                raise SchemaContractError(f"{label} plain placeholder must be frontmatter-exempt")
+            recipes[relative] = ScaffoldFileRecipe(
+                recipe=recipe,
+                title=require_string(value, "title"),
+                message=require_string(value, "message"),
+            )
+            continue
+        if recipe in special_paths:
+            require_exact_keys(value, {"recipe"}, label)
+            if relative != special_paths[recipe]:
+                raise SchemaContractError(f"{label} recipe {recipe!r} must target {special_paths[recipe]!r}")
+            recipes[relative] = ScaffoldFileRecipe(recipe=recipe)
+            continue
+        raise SchemaContractError(f"{label} has unsupported recipe {recipe!r}")
+    return ScaffoldContract(files=recipes)
 
 
 def require_mapping(payload: dict[str, Any], field: str) -> dict[str, Any]:

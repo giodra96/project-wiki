@@ -2,8 +2,8 @@ manifest_version: 1
 
 schema:
   name: project-wiki
-  version: 1.4.0
-  updated: '2026-08-24'
+  version: 1.5.0
+  updated: '2026-08-26'
 
 registries:
   document_version: 1
@@ -57,6 +57,7 @@ semantic_paths:
   intake_root_directory: intake
   intake_documents_directory: intake/documents
   intake_index_file: intake/INDEX.md
+  requirement_evidence_file: traceability/requirement-evidence.yml
 
 canonical_tree:
   required_directories:
@@ -90,8 +91,8 @@ canonical_tree:
     - GLOSSARY.md
     - requirements/INDEX.md
     - requirements/product-brief.md
-    - requirements/functional-requirements.md
-    - requirements/non-functional-requirements.md
+    - requirements/functional/INDEX.md
+    - requirements/non-functional/INDEX.md
     - requirements/constraints.md
     - requirements/open-questions.md
     - changes/INDEX.md
@@ -106,6 +107,7 @@ canonical_tree:
     - implementation/current-plan.md
     - traceability/INDEX.md
     - traceability/requirement-map.md
+    - traceability/requirement-evidence.yml
     - traceability/change-impact-map.md
     - traceability/code-map.md
     - analysis/INDEX.md
@@ -227,7 +229,6 @@ alert_severities:
 id_patterns:
   generic: '[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*'
   project: 'PROJECT'
-  requirement-overview: '(?:REQUIREMENTS|REQ-FUNCTIONAL|REQ-NON-FUNCTIONAL)-OVERVIEW'
   note: '[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*'
   technical: 'TECH-[A-Z0-9]+(?:-[A-Z0-9]+)*'
   requirement: 'REQ-\d{3}'
@@ -257,7 +258,6 @@ id_patterns:
 
 id_examples:
   project: PROJECT
-  requirement-overview: REQUIREMENTS-OVERVIEW
   note: DOC-001
   technical: TECH-SECURITY
   requirement: REQ-001
@@ -314,9 +314,6 @@ embedded_id_pattern_keys:
 document_type_contracts:
   project:
     id_pattern: project
-    status_domain: default
-  requirement-overview:
-    id_pattern: requirement-overview
     status_domain: default
   note:
     id_pattern: note
@@ -455,9 +452,6 @@ template_contracts:
   PROJECT.md:
     type: project
     id: PROJECT
-  Requirement Overview File:
-    type: requirement-overview
-    id: REQUIREMENTS-OVERVIEW
   Requirement Topic File:
     type: requirements-topic
     id: REQ-TOPIC-YYYYMMDD-001
@@ -509,7 +503,6 @@ template_section_inventory:
     - Section INDEX.md
   assets/requirements-change-templates.md:
     - Requirement Section
-    - Requirement Overview File
     - Requirement Topic File
     - Open Question
     - Change Request
@@ -537,6 +530,302 @@ template_section_inventory:
     - Logs INDEX.md
     - Wiki Log File
 
+scaffold_contract:
+  files:
+    INDEX.md:
+      recipe: rendered-template
+      asset: assets/core-templates.md
+      template: Root INDEX.md
+      replacements: [date]
+    WIKI_VERSION.yml:
+      recipe: wiki-version
+    REGISTRY.yml:
+      recipe: document-registry
+    STATUS.md:
+      recipe: status
+    PROJECT.md:
+      recipe: placeholder-document
+      id: PROJECT
+      type: project
+      title: Project Overview
+      tags: [project]
+      message: No project-specific identity or goals have been captured yet.
+    GLOSSARY.md:
+      recipe: placeholder-document
+      id: GLOSSARY
+      type: note
+      title: Glossary
+      tags: [glossary]
+      message: No project-specific terms have been captured yet.
+    requirements/INDEX.md:
+      recipe: section-index
+      title: Requirements
+      description: This section stores explicit product intent, constraints, and open questions.
+      when_to_read:
+        - Understand confirmed project behavior, scope, constraints, or unresolved product intent.
+      key_files:
+        - '[Product brief](./product-brief.md)'
+        - '[Functional requirements](./functional/INDEX.md)'
+        - '[Non-functional requirements](./non-functional/INDEX.md)'
+        - '[Constraints](./constraints.md)'
+        - '[Open questions](./open-questions.md)'
+      placeholders:
+        - No project-specific requirements have been captured yet.
+    requirements/product-brief.md:
+      recipe: placeholder-document
+      id: PRODUCT-BRIEF
+      type: note
+      title: Product Brief
+      tags: [requirements, product]
+      message: No explicit product brief has been captured yet.
+    requirements/functional/INDEX.md:
+      recipe: section-index
+      title: Functional Requirements
+      description: This index routes to functional requirement topics; atomic REQ records live only in linked topic files.
+      when_to_read:
+        - Work with product capabilities, workflows, integrations, or other functional behavior.
+      key_files: []
+      placeholders:
+        - No confirmed functional requirement topics have been captured yet.
+    requirements/non-functional/INDEX.md:
+      recipe: section-index
+      title: Non-Functional Requirements
+      description: This index routes to non-functional requirement topics; atomic NFR records live only in linked topic files.
+      when_to_read:
+        - Work with quality attributes, operations, security, resilience, performance, or service levels.
+      key_files: []
+      placeholders:
+        - No confirmed non-functional requirement topics have been captured yet.
+    requirements/constraints.md:
+      recipe: placeholder-document
+      id: CONSTRAINTS
+      type: note
+      title: Constraints
+      tags: [requirements, constraints]
+      message: No project-specific constraints have been captured yet.
+    requirements/open-questions.md:
+      recipe: placeholder-document
+      id: OPEN-QUESTIONS
+      type: note
+      title: Open Questions
+      tags: [requirements, open-questions]
+      message: No project-specific open questions have been captured yet.
+    changes/INDEX.md:
+      recipe: section-index
+      title: Changes
+      description: This section preserves project changes, change requests, and architectural decisions.
+      when_to_read:
+        - Review how requirements, scope, or technical direction changed over time.
+      key_files:
+        - '[Project changelog](./CHANGELOG.md)'
+        - '[Change requests](./requests/)'
+        - '[Architectural decisions](./decisions/)'
+      placeholders:
+        - No project changes or decisions have been captured yet.
+    changes/CHANGELOG.md:
+      recipe: plain-placeholder
+      title: Project Changelog
+      message: No project changes have been captured yet.
+    technical/INDEX.md:
+      recipe: section-index
+      title: Technical Documentation
+      description: This section records implemented or observed code behavior and technical structure.
+      when_to_read:
+        - Work with architecture, modules, APIs, data, integrations, tests, deployment, or security.
+      key_files:
+        - '[Architecture](./architecture.md)'
+        - '[Codebase map](./codebase-map.md)'
+        - '[Testing](./testing.md)'
+        - '[Deployment](./deployment.md)'
+        - '[Security](./security.md)'
+      placeholders:
+        - No project-specific technical documentation has been captured yet.
+    technical/architecture.md:
+      recipe: placeholder-document
+      id: TECH-ARCHITECTURE
+      type: technical
+      title: Architecture
+      tags: [technical, architecture]
+      message: No project-specific architecture documentation has been captured yet.
+    technical/codebase-map.md:
+      recipe: placeholder-document
+      id: TECH-CODEBASE-MAP
+      type: technical
+      title: Codebase Map
+      tags: [technical, codebase]
+      message: No project-specific codebase map has been captured yet.
+    technical/testing.md:
+      recipe: placeholder-document
+      id: TECH-TESTING
+      type: technical
+      title: Testing
+      tags: [technical, testing]
+      message: No project-specific testing documentation has been captured yet.
+    technical/deployment.md:
+      recipe: placeholder-document
+      id: TECH-DEPLOYMENT
+      type: technical
+      title: Deployment
+      tags: [technical, deployment]
+      message: No project-specific deployment documentation has been captured yet.
+    technical/security.md:
+      recipe: placeholder-document
+      id: TECH-SECURITY
+      type: technical
+      title: Security
+      tags: [technical, security]
+      message: No project-specific security documentation has been captured yet.
+    implementation/INDEX.md:
+      recipe: section-index
+      title: Implementation
+      description: This section tracks current plans, work items, scans, and synchronization reports.
+      when_to_read:
+        - Review active implementation work or repository scan history.
+      key_files:
+        - '[Current plan](./current-plan.md)'
+        - '[Work items](./work-items/)'
+        - '[Scans and sync reports](./scans/)'
+      placeholders:
+        - No project-specific implementation plan has been captured yet.
+    implementation/current-plan.md:
+      recipe: placeholder-document
+      id: CURRENT-PLAN
+      type: note
+      title: Current Plan
+      tags: [implementation, plan]
+      message: No project-specific implementation plan has been captured yet.
+    traceability/INDEX.md:
+      recipe: section-index
+      title: Traceability
+      description: This section connects requirements, changes, decisions, technical documentation, and source paths.
+      when_to_read:
+        - Analyze implementation coverage or change impact.
+      key_files:
+        - '[Requirement map](./requirement-map.md)'
+        - '[Requirement evidence](./requirement-evidence.yml)'
+        - '[Change impact map](./change-impact-map.md)'
+        - '[Code map](./code-map.md)'
+      placeholders:
+        - No project-specific traceability has been captured yet.
+    traceability/requirement-map.md:
+      recipe: plain-placeholder
+      title: Requirement Traceability Map
+      message: No requirement traceability has been captured yet.
+    traceability/requirement-evidence.yml:
+      recipe: requirement-evidence
+    traceability/change-impact-map.md:
+      recipe: plain-placeholder
+      title: Change Impact Map
+      message: No change impact traceability has been captured yet.
+    traceability/code-map.md:
+      recipe: plain-placeholder
+      title: Code Traceability Map
+      message: No code traceability has been captured yet.
+    analysis/INDEX.md:
+      recipe: rendered-template
+      asset: assets/governance-templates.md
+      template: Analysis INDEX.md
+      replacements: []
+    maintenance/INDEX.md:
+      recipe: rendered-template
+      asset: assets/governance-templates.md
+      template: Maintenance INDEX.md
+      replacements: []
+    alerts/INDEX.md:
+      recipe: rendered-template
+      asset: assets/governance-templates.md
+      template: Alerts INDEX.md
+      replacements: []
+    intake/INDEX.md:
+      recipe: rendered-template
+      asset: assets/intake-source-templates.md
+      template: Intake INDEX.md
+      replacements: []
+    sources/INDEX.md:
+      recipe: rendered-template
+      asset: assets/intake-source-templates.md
+      template: Sources INDEX.md
+      replacements: []
+    sources/SOURCE_REGISTRY.yml:
+      recipe: source-registry
+    logs/INDEX.md:
+      recipe: section-index
+      title: Wiki Audit Logs
+      description: This section records meaningful edits to the project knowledge base.
+      when_to_read:
+        - Audit how and why wiki documents changed.
+      key_files: []
+      placeholders:
+        - No wiki audit log exists yet; complete init or scan to create the current monthly log.
+    templates/requirement.md:
+      recipe: local-template
+      asset: assets/requirements-change-templates.md
+      template: Requirement Section
+    templates/change-request.md:
+      recipe: local-template
+      asset: assets/requirements-change-templates.md
+      template: Change Request
+    templates/adr.md:
+      recipe: local-template
+      asset: assets/requirements-change-templates.md
+      template: ADR
+    templates/module-doc.md:
+      recipe: local-template
+      asset: assets/technical-implementation-templates.md
+      template: Module Documentation
+    templates/api-doc.md:
+      recipe: local-template
+      asset: assets/technical-implementation-templates.md
+      template: API Documentation
+    templates/analysis.md:
+      recipe: local-template
+      asset: assets/governance-templates.md
+      template: Analysis Page
+    templates/alert.md:
+      recipe: local-template
+      asset: assets/governance-templates.md
+      template: Alert
+    templates/source-index.md:
+      recipe: local-template
+      asset: assets/intake-source-templates.md
+      template: Sources INDEX.md
+    templates/source-registry.yml:
+      recipe: local-template
+      asset: assets/intake-source-templates.md
+      template: SOURCE_REGISTRY.yml
+    templates/document-intake-index.md:
+      recipe: local-template
+      asset: assets/intake-source-templates.md
+      template: Intake INDEX.md
+    templates/document-intake-review.md:
+      recipe: local-template
+      asset: assets/intake-source-templates.md
+      template: Document Intake Review
+    templates/maintenance-lint.md:
+      recipe: local-template
+      asset: assets/governance-templates.md
+      template: Maintenance Lint Report
+    templates/schema-migration.md:
+      recipe: local-template
+      asset: assets/governance-templates.md
+      template: Schema Migration Report
+    templates/scan-report.md:
+      recipe: local-template
+      asset: assets/technical-implementation-templates.md
+      template: Scan Report
+    templates/sync-report.md:
+      recipe: local-template
+      asset: assets/technical-implementation-templates.md
+      template: Sync Report
+    templates/work-item.md:
+      recipe: local-template
+      asset: assets/technical-implementation-templates.md
+      template: Work Item
+    templates/wiki-log.md:
+      recipe: local-template
+      asset: assets/governance-templates.md
+      template: Wiki Log File
+
 documentation_contract:
   version_references:
     SKILL.md:
@@ -547,8 +836,6 @@ documentation_contract:
     SECURITY.md:
       - '`{schema_minor}.x` (Current)'
       - '`< {schema_version}`'
-    references/workflows.md:
-      - 'Current project wiki schema version: `{schema_version}`'
     assets/core-templates.md:
       - 'schema_version: {schema_version}'
     assets/governance-templates.md:

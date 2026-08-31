@@ -41,6 +41,8 @@ def create_valid_wiki(root: Path, contract: SchemaContract = TEST_CONTRACT) -> d
                 f"version: {contract.source_registry_version}\nupdated: 2026-08-20\nsources: []\n",
                 encoding="utf-8",
             )
+        elif relative == contract.semantic_paths.requirement_evidence_file:
+            path.write_text("version: 1\nrecords: {}\n", encoding="utf-8")
         elif relative.startswith("templates/"):
             path.write_text("Template placeholder.\n", encoding="utf-8")
         elif frontmatter_is_exempt(relative, contract):

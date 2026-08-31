@@ -90,8 +90,8 @@ Example entries:
 
 ```yaml
 schema: project-wiki
-schema_version: 1.4.0
-schema_updated: 2026-08-24
+schema_version: 1.5.0
+schema_updated: 2026-08-26
 last_migrated: YYYY-MM-DD
 maintained_by_skill: project-wiki
 notes: Current schema applied.
@@ -113,28 +113,14 @@ Preserve existing file content and insert or replace only this marked block.
 <!-- PROJECT-WIKI:BEGIN -->
 ## Project Wiki Protocol
 
-This repository uses `.project-wiki/` as the authoritative project knowledge base for requirements, change history, technical documentation, implementation state, traceability, and wiki audit logs.
-
 When `.project-wiki/INDEX.md` exists:
 
-- Before implementing, modifying, debugging, refactoring, testing, documenting, or planning code, read `.project-wiki/INDEX.md` first and open only the linked wiki files needed for the task.
-- After source code changes made through the agent, update affected wiki documents, `REGISTRY.yml`, `STATUS.md`, relevant section indexes, traceability maps, and `logs/wiki-log-YYYY-MM.md` before finishing.
-- Use `/project-wiki sync` or the project-wiki sync workflow when source code was changed manually or outside the current agent chat flow.
-- Use `/project-wiki update` or the project-wiki update workflow when the user provides meeting notes, documents, planning notes, or new requirements.
-- During update, always run the project-wiki deterministic inbox preflight with skip quarantine before registering or ingesting `.project-wiki/sources/inbox/` files. Follow its `process`, `skip`, `review`, `selected_registry_id`, and `quarantined_to` outputs instead of reproducing mechanical checks or choices in model reasoning.
-- For PDF/DOCX source documents, never read the source directly into model context. Use the local file path with the project-wiki ingestion script first.
-- During document integration, process every chunk in batches and update `review-progress.yml`; do not mark an intake reviewed or integrated until all chunks are classified or skipped with a reason.
-- Use `/project-wiki maintain` or the project-wiki maintain workflow to migrate older wiki schemas, run deterministic structural validation, then review stale meaning, contradictions, and traceability quality semantically.
-- During maintain, treat `validate_wiki.py` findings as authoritative for tree, YAML, frontmatter, IDs, status, registry, path, and link checks; do not reproduce those checks in model reasoning.
-- When new information arrives, reconcile existing open questions before creating new ones.
-- Put explicit business or product intent in `requirements/`; put implemented or observed code behavior in `technical/`. Unconfirmed code-inferred requirements belong in `requirements/open-questions.md`, not in requirement files.
-- Treat `alerts/` as the active warning dashboard. Resolve alerts with evidence instead of deleting them.
-- File durable, meaningful answers into existing wiki docs or linked `analysis/` pages only when they create lasting project knowledge.
-- Keep `changes/CHANGELOG.md` for project-level changes and `logs/wiki-log-YYYY-MM.md` for knowledge base edits.
-- Write all `.project-wiki/` content, generated templates, logs, CRs, ADRs, technical docs, scan reports, sync reports, and this instruction block in English.
-- Reply to the user in chat using the language used by the user, unless the user explicitly requests another language.
+- Before implementing, modifying, debugging, refactoring, testing, documenting, or planning code, read `.project-wiki/INDEX.md` and only the linked context needed for the task.
+- After agent-made source changes, update affected wiki docs, indexes, `REGISTRY.yml`, `STATUS.md`, traceability, and the monthly wiki log before finishing. Record observed behavior in `technical/`; do not infer product requirements from code.
+- Use the project-wiki `update` workflow for notes, requirements, or external documents; `sync` for manual or external code changes; and `maintain` for validation or migration. Follow each workflow's deterministic scripts and never load PDF/DOCX sources directly into model context.
+- Reconcile existing open questions before creating new ones. Log every meaningful wiki edit. Write wiki content in English and reply in the user's language unless requested otherwise.
 
-Do not load the entire wiki by default. Use `.project-wiki/INDEX.md` as the routing entrypoint and follow links progressively.
+Do not load the whole wiki. Route progressively from `.project-wiki/INDEX.md`.
 <!-- PROJECT-WIKI:END -->
 ```
 

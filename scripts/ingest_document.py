@@ -182,7 +182,7 @@ def main() -> int:
                 if args.copy_source
                 else None
             )
-            copied_source_path = doc_dir / staged_source_path.name if staged_source_path else None
+            copied_source_path = Path(staged_source_path.name) if staged_source_path else None
 
             write_source_info(
                 path=staging_dir / artifacts.source_info,
@@ -660,9 +660,10 @@ def write_extracted_markdown(
         "## Progressive Text Access",
         "",
         f"- Read [{artifacts.intake_report}](./{artifacts.intake_report}) first.",
-        f"- Read [{artifacts.chunks_manifest}](./{artifacts.chunks_manifest}) as a lightweight manifest.",
-        f"- Track every disposition in [{artifacts.review_progress}](./{artifacts.review_progress}).",
-        f"- Open files under [{artifacts.chunk_directory}/](./{artifacts.chunk_directory}/) progressively until the requested review or integration is complete.",
+        f"- Use `review_progress.py inspect --intake-id {doc_id}` for the compact outline and review state.",
+        f"- Use `review_progress.py view --intake-id {doc_id} --all` when structure is unclear or full context matters.",
+        "- Use `view --section SEC-NNN` only for source-defined sections reported as reliable by `inspect`.",
+        f"- Track every disposition through `review_progress.py apply`; the ledger remains [{artifacts.review_progress}](./{artifacts.review_progress}).",
         "",
         "## Extraction Summary",
         "",
@@ -670,14 +671,7 @@ def write_extracted_markdown(
         f"- Chunk count: {len(chunks)}",
         f"- Total extracted words: {sum(chunk.word_count for chunk in chunks)}",
         "- Full text embedded in this file: no",
-        "",
-        "## Chunk Files",
-        "",
     ]
-
-    for chunk in chunks:
-        page_part = f", pages {chunk.page_start}-{chunk.page_end}" if chunk.page_start is not None else ""
-        lines.append(f"- [{chunk.id}](./{chunk_text_path(chunk)}) ({chunk.word_count} words{page_part})")
     path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
 
 
@@ -837,13 +831,9 @@ def write_intake_report(
     status: str,
     artifacts: Any,
     confidence: str,
+    warnings: list[str] | None = None,
 ) -> None:
-    hint_counts: dict[str, int] = {}
-    for chunk in chunks:
-        for hint in chunk.hints:
-            hint_counts[hint] = hint_counts.get(hint, 0) + 1
-
-    candidate_chunks = [chunk for chunk in chunks if chunk.hints]
+    warnings = warnings or []
     lines = [
         "---",
         f"id: {doc_id}",
@@ -865,70 +855,34 @@ def write_intake_report(
         f"- Intake ID: `{doc_id}`",
         f"- Source path: `{source.as_posix()}`",
         f"- Source filename: `{source.name}`",
-        f"- Intake status: `{status}`",
-        "",
-        "## Generated Artifacts",
-        "",
-        f"- [{artifacts.source_info}](./{artifacts.source_info})",
-        f"- [{artifacts.extraction_index}](./{artifacts.extraction_index})",
-        f"- [{artifacts.chunks_manifest}](./{artifacts.chunks_manifest})",
-        f"- [{artifacts.review_progress}](./{artifacts.review_progress})",
-        f"- [{artifacts.chunk_directory}/](./{artifacts.chunk_directory}/)",
         "",
         "## Extraction Summary",
         "",
         f"- Chunk count: {len(chunks)}",
         f"- Total extracted words: {sum(chunk.word_count for chunk in chunks)}",
-        "- Separate signals file: not generated in V1",
-        f"- Lightweight hints: stored inside `{artifacts.chunks_manifest}` per chunk",
-        f"- Review coverage: tracked for every chunk in `{artifacts.review_progress}`",
-        f"- Full chunk text: stored in separate files under `{artifacts.chunk_directory}/`",
-        "- Candidate listing: every chunk with lightweight hints is listed below; this is not an integration cap",
+        f"- Review coverage: [{artifacts.review_progress}](./{artifacts.review_progress})",
+        "- Full source text embedded in this report: no",
         "",
-        "## Hint Summary",
+        "## Extraction Warnings",
         "",
     ]
-    if hint_counts:
-        for hint, count in sorted(hint_counts.items()):
-            lines.append(f"- `{hint}`: {count} chunk(s)")
+    if warnings:
+        lines.extend(f"- {warning}" for warning in warnings)
     else:
-        lines.append("- No lightweight hints detected.")
-
-    lines.extend(["", "## Candidate Chunks For Agent Review", ""])
-    if candidate_chunks:
-        lines.append(
-            "Every chunk with lightweight hints is listed here. Chunks without hints may still be relevant; "
-            f"use `{artifacts.chunks_manifest}` to review the full document progressively when integrating requirements."
-        )
-        lines.append("")
-        for chunk in candidate_chunks:
-            page_part = f", pages {chunk.page_start}-{chunk.page_end}" if chunk.page_start is not None else ""
-            hints = ", ".join(f"`{hint}`" for hint in chunk.hints)
-            lines.append(f"- [`{chunk.id}`](./{chunk_text_path(chunk)}) ({chunk.word_count} words{page_part}): {hints}")
-    else:
-        lines.append("- No candidate chunks detected by lightweight hints. The agent should still review the document context if requested by the user.")
+        lines.append("- None recorded by the extractor.")
 
     lines.extend(
         [
             "",
-            "## Agent Review Checklist",
+            "## Review Access",
             "",
-            "For each relevant chunk, determine whether it is:",
-            "",
-            "- A new requirement.",
-            "- A refinement of an existing requirement.",
-            "- A lightweight change request.",
-            "- An ADR-level decision.",
-            "- Technical documentation for implemented behavior.",
-            "- A conflict with the current KB or as-is technical state.",
-            "- An open question.",
-            "- Background information to mark `skipped` with a reason rather than integrate into the canonical KB.",
-            "",
-            f"Read `{artifacts.chunks_manifest}` as a lightweight manifest first, then open chunk files progressively until every item relevant to the requested integration has been classified. Do not stop at a fixed number of candidate chunks.",
-            "",
-            f"Update `{artifacts.review_progress}` after each batch. Do not mark the intake complete while any chunk is `pending` or `reviewed`.",
-            "",
-            f"Clear, low-risk information may be integrated directly into the KB and logged. Create `{artifacts.review}` only when the source information is significant, ambiguous, risky, conflicting, authority-unclear, or materially cross-section. The review must still cover all relevant information rather than a truncated sample.",
+            f"- Run `review_progress.py inspect --intake-id {doc_id}` for a compact structure and progress view.",
+            f"- Run `review_progress.py view --intake-id {doc_id} --all` when structure is absent, incomplete, ambiguous, or full-document context matters.",
+            "- Use `view --section SEC-NNN` only when `inspect` reports reliable source-defined sections.",
+            "- After coverage is complete, run `review_progress.py audit`; require `review-complete` and record its ledger summary and SHA-256. Rerun after ledger corrections.",
+            "- Before a terminal intake status, run `audit --expect-ledger-sha256 <final-ledger-sha256>` with the digest from the reviewed audit.",
+            "- Review every section and any unsectioned content before completion; never invent sections to reduce context.",
+            f"- Record dispositions with `review_progress.py apply`; do not complete the intake while [{artifacts.review_progress}](./{artifacts.review_progress}) contains `pending` or `reviewed` entries.",
         ]
     )
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")

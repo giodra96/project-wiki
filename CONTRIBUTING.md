@@ -14,7 +14,6 @@ This guide outlines our development workflow, core architectural principles, and
 - [Security Policy](SECURITY.md)
 - [Machine-Readable Schema Contract](schema/project-wiki.yml)
 - [Human Wiki Structure Reference](references/wiki-structure.md)
-- [Workflow Index](references/workflows.md)
 - [Document Ingestion](references/document-ingestion.md)
 - [Document Templates](assets/document-templates.md)
 
@@ -107,8 +106,8 @@ When authoring or modifying skill resources, always uphold these non-negotiable 
 
 ### 1. Keep `SKILL.md` Compact
 `SKILL.md` is loaded directly into the AI agent's active system prompt. To protect the agent's context budget:
-- Keep `SKILL.md` under 150 lines.
-- Place each extensive workflow in the focused `references/*-workflow*.md` family routed by `references/workflows.md`.
+- Keep only direct task routing, the operating contract, and truly cross-cutting invariants in `SKILL.md`; do not trade required behavior for a fixed size target.
+- Link each focused `references/*-workflow*.md` family directly from `SKILL.md`.
 - Define machine-readable tree, frontmatter, status, and ID contracts in `schema/project-wiki.yml`; explain them in `references/wiki-structure.md`.
 - Place reusable generated markdown and YAML shapes in the focused catalog routed by `assets/document-templates.md`.
 
@@ -150,8 +149,8 @@ Before submitting a Pull Request, verify the following:
 - [ ] `name: project-wiki` is preserved in `SKILL.md`.
 - [ ] `description` in `SKILL.md` includes relevant discovery keywords.
 - [ ] `argument-hint` lists only user-facing modes (`init | scan | update | sync | maintain`).
-- [ ] `SKILL.md` remains compact; detailed procedural logic is placed in `references/`.
-- [ ] Workflow names and routes stay aligned across `SKILL.md`, `references/workflows.md`, focused workflow references, and `README.md`.
+- [ ] `SKILL.md` contains direct routing and cross-cutting invariants; detailed procedural logic is placed in `references/` without imposing a fixed size limit.
+- [ ] Direct runtime routes in `SKILL.md`, focused workflow references, and `README.md` stay aligned.
 - [ ] Templates and human references match `schema/project-wiki.yml`.
 - [ ] `schema/project-wiki.yml` remains the single machine-readable schema contract and the drift check passes:
   ```bash
@@ -164,6 +163,7 @@ Before submitting a Pull Request, verify the following:
   python3 scripts/check_inbox.py --help
   python3 scripts/ingest_document.py --help
   python3 scripts/review_progress.py --help
+  python3 scripts/wiki_scaffold.py --help
   python3 scripts/validate_wiki.py --help
   ```
 - [ ] Automated ingestion tests pass:

@@ -8,7 +8,7 @@ argument-hint: 'init | scan | update | sync | maintain'
 
 Create and maintain an agent-readable project knowledge base in `.project-wiki/` without loading the entire wiki into context. The skill is IDE-neutral.
 
-Current project wiki schema version: `1.5.0` (canonical value: `./schema/project-wiki.yml`).
+Current project wiki schema version: `1.5.1` (canonical value: `./schema/project-wiki.yml`).
 
 ## Route The Task
 

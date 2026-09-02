@@ -23,7 +23,7 @@ Please verify each item before requesting a review:
 - [ ] **Prompt Compactness**: `SKILL.md` contains direct routing and cross-cutting invariants; extensive procedures reside in `references/` and templates in `assets/`.
 - [ ] **Discovery & Metadata**: `name: project-wiki` is preserved and discovery keywords in `description` reflect any added capabilities.
 - [ ] **Workflow Alignment**: Mode names (`init`, `scan`, `update`, `sync`, `maintain`) and automatic behaviors stay consistent across all documents.
-- [ ] **Schema Version**: Compatible with Wiki Schema `1.5.0` (canonical value in `schema/project-wiki.yml`; migration documented if updated).
+- [ ] **Schema Version**: Compatible with Wiki Schema `1.5.1` (canonical value in `schema/project-wiki.yml`; migration documented if updated).
 - [ ] **Contract Drift**: `python3 scripts/check_contracts.py` passes.
 - [ ] **Smoke Test**: Passed locally:
   ```bash

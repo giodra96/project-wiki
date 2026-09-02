@@ -7,7 +7,7 @@ Security updates and fixes are applied to the latest schema version of Project W
 | Version / Schema | Supported |
 | :--- | :--- |
 | `1.5.x` (Current) | :white_check_mark: |
-| `< 1.5.0` | :x: (Please migrate using `/project-wiki maintain`) |
+| `< 1.5.1` | :x: (Please migrate using `/project-wiki maintain`) |
 
 ---
 

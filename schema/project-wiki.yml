@@ -2,8 +2,8 @@ manifest_version: 1
 
 schema:
   name: project-wiki
-  version: 1.5.0
-  updated: '2026-08-26'
+  version: 1.5.1
+  updated: '2026-09-02'
 
 registries:
   document_version: 1

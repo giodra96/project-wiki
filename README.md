@@ -24,7 +24,7 @@ Turn requirements, decisions, code knowledge, and project history into an indexe
 
 <p align="center">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg"></a>
-  <img alt="Wiki schema 1.5.1" src="https://img.shields.io/badge/wiki_schema-1.5.0-355c7d">
+  <img alt="Wiki schema 1.5.1" src="https://img.shields.io/badge/wiki_schema-1.5.1-355c7d">
   <img alt="Five project wiki workflows" src="https://img.shields.io/badge/workflows-5-2f855a">
   <img alt="IDE neutral agent skill" src="https://img.shields.io/badge/agent_skill-IDE--neutral-6b7280">
   <img alt="Markdown based storage" src="https://img.shields.io/badge/storage-Markdown-111827?logo=markdown">

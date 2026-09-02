@@ -86,13 +86,10 @@ Use full chunk IDs, one explicit entry per edge, with no ranges or duplicates. K
 
 ## Always-On Instruction Files
 
-During `init` and `scan`, create or update one repository-level always-on instruction file outside `.project-wiki/`.
+During `init` and `scan`, always create or update both repository-level always-on instruction files outside `.project-wiki/`:
 
-Use `.github/copilot-instructions.md` when the current agent is GitHub Copilot or VS Code Copilot.
-
-Use `AGENTS.md` at the repository root for Claude Code, Codex, or any non-Copilot agent.
-
-Do not create both files unless the user explicitly asks for both instruction targets. If the agent family is unclear, ask before writing.
+- `AGENTS.md` at the repository root
+- `.github/copilot-instructions.md`
 
 Preserve existing content in these files. Insert or replace only the block delimited by `<!-- PROJECT-WIKI:BEGIN -->` and `<!-- PROJECT-WIKI:END -->`.
 

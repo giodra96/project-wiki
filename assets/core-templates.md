@@ -98,16 +98,13 @@ notes: Current schema applied.
 ```
 
 ## Always-On Project Instruction Block
+ 
+Use this block during `init` and `scan`. Always create or update both repository-level always-on instruction files outside `.project-wiki/`:
 
-Use this block during `init` and `scan`.
+- `AGENTS.md` at the repository root
+- `.github/copilot-instructions.md`
 
-For GitHub Copilot or VS Code Copilot, create or update `.github/copilot-instructions.md`.
-
-For Claude Code, Codex, or any non-Copilot agent, create or update `AGENTS.md` at the repository root.
-
-Do not create both files unless the user explicitly asks for both instruction targets. If the agent family is unclear, ask which target to use before writing.
-
-Preserve existing file content and insert or replace only this marked block.
+Preserve existing file content in both files and insert or replace only this marked block.
 
 ```markdown
 <!-- PROJECT-WIKI:BEGIN -->

@@ -40,7 +40,7 @@ The skill's current schema contract comes from `schema/project-wiki.yml`. Human 
 9. Ensure logs use monthly `logs/wiki-log-YYYY-MM.md` convention. If old yearly logs exist, migrate entries only when headings are parseable; otherwise leave them in place, mark them legacy, and report the issue.
 10. Detect old intake artifacts where `extracted.md` or `chunks.json` contains full document text. Do not read those files. Mark the intake as `superseded` or report that it should be regenerated with the current script before review.
 11. For active or reviewed legacy intakes missing `review-progress.yml`, create a ledger from `chunks.json` with every chunk pending and resume review. For terminal legacy intakes, create a complete ledger with explicit legacy skip reasons rather than claiming retrospective semantic coverage.
-12. Update the always-on instruction block using [Always-On Project Instruction Bootstrap](./automatic-workflows.md#always-on-project-instruction-bootstrap).
+12. Update the always-on instruction block in both `AGENTS.md` and `.github/copilot-instructions.md` using [Always-On Project Instruction Bootstrap](./automatic-workflows.md#always-on-project-instruction-bootstrap).
 13. Update root and section indexes, `REGISTRY.yml`, `STATUS.md`, and `logs/INDEX.md` to reflect the migrated structure.
 14. Ask for user confirmation before risky migration actions such as moving large source files, splitting ambiguous legacy logs, deleting old intake directories, or changing canonical meaning.
 15. Append a monthly wiki audit log entry describing the schema migration.

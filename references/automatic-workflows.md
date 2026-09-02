@@ -33,12 +33,10 @@ Run this automatically after source code changes made by the agent through chat.
 
 Install this during `init` and `scan` so future coding tasks consult and update `.project-wiki/` even when the user does not explicitly invoke this skill.
 
-1. Detect the current agent family.
-2. If the agent is GitHub Copilot or VS Code Copilot, create or update `.github/copilot-instructions.md`.
-3. If the agent is not Copilot, create or update `AGENTS.md` at the repository root.
-4. Do not create both files unless the user explicitly asks for both Copilot and non-Copilot instruction targets.
-5. If the agent family is unclear, ask the user which instruction target to use before writing the always-on file.
-6. Preserve existing file content. Do not overwrite unrelated instructions.
-7. Insert or replace only the block delimited by `<!-- PROJECT-WIKI:BEGIN -->` and `<!-- PROJECT-WIKI:END -->`.
-8. The block must instruct agents to read `.project-wiki/INDEX.md` before source code changes, update the wiki after agent-made source code changes, use `sync` for manual or external code changes, log meaningful wiki edits, write all wiki content in English, and respond to the user in the user's chat language.
-9. Include the created or updated instruction file in `logs/wiki-log-YYYY-MM.md`.
+1. Always create or update both repository-level always-on instruction files outside `.project-wiki/`:
+   - `AGENTS.md` at the repository root
+   - `.github/copilot-instructions.md`
+2. Preserve existing file content in both files. Do not overwrite unrelated instructions.
+3. In each file, insert or replace only the block delimited by `<!-- PROJECT-WIKI:BEGIN -->` and `<!-- PROJECT-WIKI:END -->`.
+4. The block must instruct agents to read `.project-wiki/INDEX.md` before source code changes, update the wiki after agent-made source code changes, use `sync` for manual or external code changes, log meaningful wiki edits, write all wiki content in English, and respond to the user in the user's chat language.
+5. Include both created or updated instruction files in `logs/wiki-log-YYYY-MM.md`.

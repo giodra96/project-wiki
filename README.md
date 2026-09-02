@@ -204,7 +204,7 @@ After initialization, ordinary coding requests do not need a wiki command:
 - **Before code work**, the agent starts at `.project-wiki/INDEX.md` and follows only the smallest relevant context path.
 - **After agent-made code changes**, it updates affected technical docs, traceability, status, registry entries, and the wiki audit log.
 - **For durable answers**, it updates the owning canonical page or files a linked analysis only when the result has lasting project value.
-- **During `init` and `scan`**, it installs a marked project-wiki block in `.github/copilot-instructions.md` or `AGENTS.md` without overwriting unrelated instructions.
+- **During `init` and `scan`**, it installs a marked project-wiki block in both `AGENTS.md` and `.github/copilot-instructions.md` without overwriting unrelated instructions.
 
 See [Automatic Context Preflight](references/automatic-workflows.md#automatic-context-preflight), [Automatic Post-Implementation Wiki Update](references/automatic-workflows.md#automatic-post-implementation-wiki-update), and [Always-On Project Instruction Bootstrap](references/automatic-workflows.md#always-on-project-instruction-bootstrap) for the full procedures.
 
@@ -240,7 +240,7 @@ The complete structure is always created. Files that are not useful yet can rema
 `-- logs/                 # Chronological audit log of knowledge base edits
 ```
 
-The machine-readable tree, frontmatter fields, ID patterns, registry versions, and status domains live in [schema/project-wiki.yml](schema/project-wiki.yml). Their human-readable explanation lives in [references/wiki-structure.md](references/wiki-structure.md), and CI verifies the two remain aligned. The always-on instruction file lives outside `.project-wiki/`.
+The machine-readable tree, frontmatter fields, ID patterns, registry versions, and status domains live in [schema/project-wiki.yml](schema/project-wiki.yml). Their human-readable explanation lives in [references/wiki-structure.md](references/wiki-structure.md), and CI verifies the two remain aligned. The always-on instruction files live outside `.project-wiki/`.
 
 ## Core Indexing Model
 
@@ -332,11 +332,11 @@ The skill can be selected explicitly through the five command modes or implicitl
 
 Plain wiki reading and writing can remain Markdown-only. Deterministic inbox, validation, contract, and document-intake workflows require Python plus `scripts/requirements.txt`; PDF and DOCX extraction additionally use PyMuPDF and python-docx.
 
-During `init` and `scan`, the skill also creates or updates the repository-level always-on instruction file:
+During `init` and `scan`, the skill also creates or updates both repository-level always-on instruction files:
 
 ```text
+AGENTS.md                       # Claude Code, Codex, or general agents
 .github/copilot-instructions.md  # GitHub Copilot / VS Code Copilot
-AGENTS.md                       # Claude Code, Codex, or non-Copilot agents
 ```
 
 Existing content in those files must be preserved. Only the `PROJECT-WIKI` marked block should be inserted or replaced.

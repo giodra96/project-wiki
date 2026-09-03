@@ -1,5 +1,9 @@
 <h1 align="center">Project Wiki</h1>
 
+<p align="center">
+  <img alt="Project Wiki" src="assets/banner.png">
+</p>
+
 <p align="center"><strong>An extension of <a href="https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f">Karpathy's LLM Wiki</a>: durable, traceable project memory for AI coding agents.</strong></p>
 
 <p align="center">

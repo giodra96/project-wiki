@@ -1,5 +1,3 @@
-<h1 align="center">Project Wiki</h1>
-
 <p align="center">
   <img alt="Project Wiki" src="assets/banner.png">
 </p>
@@ -9,6 +7,8 @@
 <p align="center">
 Turn requirements, decisions, code knowledge, and project history into an indexed wiki that lives beside the source code and stays useful across agent sessions.
 </p>
+
+<h1 align="center">Project Wiki</h1>
 
 <p align="center">
   <a href="#quick-start">Quick start</a> &middot;

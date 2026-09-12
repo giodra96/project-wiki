@@ -299,7 +299,7 @@ class IngestDocumentTransactionTests(unittest.TestCase):
         self.assertIn("index unavailable", stderr)
         self.assert_no_document_output()
         self.assertEqual(index_path.read_text(encoding="utf-8"), "# Existing index\n")
-        self.assertEqual([path.name for path in index_path.parent.iterdir()], ["INDEX.md", "documents"])
+        self.assertEqual(sorted(path.name for path in index_path.parent.iterdir()), ["INDEX.md", "documents"])
 
     def test_existing_id_returns_clean_error_without_modifying_intake(self) -> None:
         first_exit_code, _, _ = self.invoke()

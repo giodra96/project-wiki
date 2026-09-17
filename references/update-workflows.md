@@ -20,7 +20,7 @@ Use this mode when the user pastes meeting minutes, documents, task notes, or pl
 12. Update `changes/CHANGELOG.md` with a concise dated entry for each meaningful change.
 13. Update traceability maps whenever the note affects requirements, architecture, modules, APIs, data, integrations, tests, deployment, or security.
 14. Update `REGISTRY.yml`, relevant section indexes, `sources/SOURCE_REGISTRY.yml` when source files were processed, and `STATUS.md`.
-15. Append a wiki audit entry to `logs/wiki-log-YYYY-MM.md` with the source note type and changed documents.
+15. Record the update using [Wiki Audit Log Workflow](./maintenance-workflows.md#wiki-audit-log-workflow).
 16. Report what was updated and list any unresolved ambiguities as open questions.
 
 ## Source Inbox Workflow
@@ -101,7 +101,7 @@ File an answer back into the wiki only when it creates lasting value, such as a 
 3. Every analysis page must link to related requirements, CRs, ADRs, technical docs, alerts, work items, intake records, or source paths. Do not create isolated analysis pages.
 4. If the answer resolves an open question, update `requirements/open-questions.md` and link the evidence.
 5. If the answer identifies a significant risk or contradiction, create or update an alert.
-6. Update `analysis/INDEX.md`, `REGISTRY.yml`, `STATUS.md` when relevant, and `logs/wiki-log-YYYY-MM.md`.
+6. Update `analysis/INDEX.md`, `REGISTRY.yml`, and `STATUS.md` when relevant; log the meaningful knowledge update using [Wiki Audit Log Workflow](./maintenance-workflows.md#wiki-audit-log-workflow).
 7. Do not file routine chat answers, generic explanations, transient debugging notes, duplicated content, or unapproved speculation.
 
 ## Open Questions Reconciliation Workflow
@@ -124,4 +124,4 @@ Reconcile existing open questions before creating new ones.
 6. Create new open questions only after existing questions have been reconciled and de-duplicated.
 7. If an unresolved question represents a significant risk, contradiction, blocking gap, or dangerous assumption, create or update an alert.
 8. Update `REGISTRY.yml`, relevant indexes, `STATUS.md`, and traceability when files changed.
-9. If reconciliation changes any wiki file, append a wiki audit entry to `logs/wiki-log-YYYY-MM.md`. If the workflow only checks questions and makes no changes, do not log unless the user explicitly requested an audit trail.
+9. Record reconciliation outcomes using [Wiki Audit Log Workflow](./maintenance-workflows.md#wiki-audit-log-workflow).

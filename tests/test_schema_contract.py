@@ -39,6 +39,8 @@ class SchemaContractTests(unittest.TestCase):
                 "assets/document-templates.md",
             }
         )
+        for paths in self.contract.documentation.intake_artifact_references.values():
+            relatives.update(paths)
         relatives.update(self.contract.template_section_inventory)
         source_root = Path(__file__).resolve().parents[1]
         for relative in relatives:
@@ -217,6 +219,34 @@ class SchemaContractTests(unittest.TestCase):
         readme.write_text(readme.read_text(encoding="utf-8") + "\nPrevious schema version: 9.9.9.\n", encoding="utf-8")
 
         self.assertIn("schema-version-drift", self.codes(repo_root))
+
+    def test_weekly_log_example_drift_is_reported(self) -> None:
+        repo_root = self.copy_contract_surface()
+        readme = repo_root / "README.md"
+        text = readme.read_text(encoding="utf-8")
+        readme.write_text(
+            text.replace(
+                "`-- logs/                 # Chronological audit log of knowledge base edits",
+                "`-- logs/                 # Chronological audit log of knowledge base edits\n"
+                "    `-- wiki-log-YYYY-Www.md",
+            ),
+            encoding="utf-8",
+        )
+        self.assertTrue(check_contracts.check_contracts(repo_root, self.contract).valid)
+
+        payload = yaml.safe_load(self.contract.manifest_path.read_text(encoding="utf-8"))
+        examples = payload["canonical_tree"]["example_files"]
+        examples.remove("logs/wiki-log-YYYY-Www.md")
+        manifest = self.root / "missing-weekly-log-contract.yml"
+        manifest.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+        mutated_contract = load_schema_contract(manifest)
+
+        findings = check_contracts.check_contracts(repo_root, mutated_contract).findings
+        self.assertTrue(any(
+            finding.code == "public-tree-entry-extra"
+            and "logs/wiki-log-YYYY-Www.md" in finding.message
+            for finding in findings
+        ))
 
     def test_public_root_decisions_path_is_rejected(self) -> None:
         repo_root = self.copy_contract_surface()

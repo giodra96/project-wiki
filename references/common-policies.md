@@ -41,5 +41,5 @@ After any non-trivial wiki update, verify:
 - Requirement files contain only confirmed or explicitly sourced product intent; observed implementation facts, technical constraints, concerns, candidate behavior, and code-inferred candidate areas are documented in `technical/` and linked to inferred open questions when product intent needs confirmation.
 - Requirements indexes are routing-only; family indexes route to every topic file, and `REGISTRY.yml` paths point to final atomic anchors.
 - Traceability maps changed when requirements, CRs, ADRs, technical docs, or source paths changed.
-- `logs/wiki-log-YYYY-MM.md` records what changed in the knowledge base and why.
+- Wiki changes are recorded according to [Wiki Audit Log Workflow](./maintenance-workflows.md#wiki-audit-log-workflow).
 - Generated or updated project wiki content is written in English, while the chat response uses the user's language.

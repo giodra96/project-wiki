@@ -564,11 +564,11 @@ class WikiValidatorTests(unittest.TestCase):
         )
 
     def test_wiki_log_registry_title_uses_text_after_embedded_id(self) -> None:
-        log_path = self.root / "logs" / "wiki-log-2026-08.md"
+        log_path = self.root / "logs" / "wiki-log-2026-W35.md"
         log_path.write_text(
             "\n".join(
                 [
-                    "# Wiki Log 2026-08",
+                    "# Wiki Log 2026-W35",
                     "",
                     '<a id="wlog-20260825-001"></a>',
                     "",
@@ -585,7 +585,7 @@ class WikiValidatorTests(unittest.TestCase):
                 "id": "WLOG-20260825-001",
                 "type": "note",
                 "title": "Initial Repository Scan",
-                "path": "logs/wiki-log-2026-08.md#wlog-20260825-001",
+                "path": "logs/wiki-log-2026-W35.md#wlog-20260825-001",
                 "status": "active",
                 "tags": ["log", "scan"],
                 "related": [],

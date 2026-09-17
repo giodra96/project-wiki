@@ -8,7 +8,7 @@ argument-hint: 'init | scan | update | sync | maintain'
 
 Create and maintain an agent-readable project knowledge base in `.project-wiki/` without loading the entire wiki into context. The skill is IDE-neutral.
 
-Current project wiki schema version: `1.5.1` (canonical value: `./schema/project-wiki.yml`).
+Current project wiki schema version: `1.6.0` (canonical value: `./schema/project-wiki.yml`).
 
 ## Route The Task
 
@@ -32,7 +32,7 @@ Load [Document Templates](./assets/document-templates.md) only when creating an 
 1. Read `.project-wiki/INDEX.md` first when it exists, follow its routes, and open only the smallest relevant set of files. Use `REGISTRY.yml` only when indexes do not resolve the task.
 2. Before code planning or changes, run the automatic context preflight. After agent-made source changes, run the automatic post-implementation workflow; reserve `sync` for external or manual changes.
 3. Follow the selected workflow completely. Prefer the supplied deterministic scripts over reproducing structural, validation, duplicate, extraction, or ledger logic in model reasoning.
-4. After every meaningful wiki edit, reconcile affected indexes, `REGISTRY.yml`, `STATUS.md`, traceability, and `logs/wiki-log-YYYY-MM.md` as required by the selected workflow.
+4. After every meaningful wiki edit, reconcile affected indexes, `REGISTRY.yml`, `STATUS.md`, and traceability; record it using [Wiki Audit Log Workflow](./references/maintenance-workflows.md#wiki-audit-log-workflow).
 
 ## Invariants
 

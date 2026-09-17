@@ -17,7 +17,7 @@ Use this mode to keep the wiki healthy. `maintain` includes structural cleanup a
 9. Mark stale documents as `superseded`, `deprecated`, or `placeholder` rather than deleting history.
 10. Apply low-risk fixes directly. For high-impact contradictions, stale claims, alert resolutions, or canonical meaning changes, write the lint finding and ask for user confirmation before changing canonical docs.
 11. Update `STATUS.md` with deterministic validation status, semantic maintenance results, active alert counts, open question counts, schema version status, and compact discovery summary links.
-12. Append a wiki audit entry to `logs/wiki-log-YYYY-MM.md` summarizing repaired or flagged structural and semantic issues.
+12. Record maintenance changes using [Wiki Audit Log Workflow](#wiki-audit-log-workflow).
 
 ## Schema Migration Workflow
 
@@ -30,20 +30,20 @@ The skill's current schema contract comes from `schema/project-wiki.yml`. Human 
 3. If the schema is current, record that no schema migration was needed and continue normal maintenance.
 4. If the schema is older or missing, create or update `.project-wiki/maintenance/schema-migration-YYYYMMDD.md` with planned and applied migration actions.
 5. Preserve existing content. Do not delete or overwrite user/project-authored files during schema migration.
-6. Create missing canonical directories and placeholder files from [Wiki structure](./wiki-structure.md), including `sources/`, `analysis/`, `maintenance/`, `alerts/`, monthly `logs/`, and local templates.
+6. Create missing canonical directories and placeholder files from [Wiki structure](./wiki-structure.md), including `sources/`, `analysis/`, `maintenance/`, `alerts/`, `logs/`, and local templates.
    - For migration from schema 1.4, create `requirements/functional/INDEX.md` and `requirements/non-functional/INDEX.md`.
    - If legacy `functional-requirements.md` or `non-functional-requirements.md` contains atomic records, move them into evidence-backed topic files only after semantic review; never discard or mechanically regroup them.
    - If legacy atomic records contain inline or free-text source evidence, migrate verified edges into `traceability/requirement-evidence.yml`; do not infer ambiguous ranges or delete human notes without review.
    - Remove an empty legacy overview after updating links and registry. If it contains unresolved content, retain it temporarily as `superseded` until migration is complete.
-7. Create or update `.project-wiki/WIKI_VERSION.yml` to the current schema version after migration actions are applied.
+7. Update `.project-wiki/WIKI_VERSION.yml` to the current schema version only after all migration actions succeed.
 8. Ensure `sources/SOURCE_REGISTRY.yml` exists and uses version `1`.
-9. Ensure logs use monthly `logs/wiki-log-YYYY-MM.md` convention. If old yearly logs exist, migrate entries only when headings are parseable; otherwise leave them in place, mark them legacy, and report the issue.
+9. Align logs and local templates with [Wiki Audit Log Workflow](#wiki-audit-log-workflow).
 10. Detect old intake artifacts where `extracted.md` or `chunks.json` contains full document text. Do not read those files. Mark the intake as `superseded` or report that it should be regenerated with the current script before review.
 11. For active or reviewed legacy intakes missing `review-progress.yml`, create a ledger from `chunks.json` with every chunk pending and resume review. For terminal legacy intakes, create a complete ledger with explicit legacy skip reasons rather than claiming retrospective semantic coverage.
 12. Update the always-on instruction block in both `AGENTS.md` and `.github/copilot-instructions.md` using [Always-On Project Instruction Bootstrap](./automatic-workflows.md#always-on-project-instruction-bootstrap).
 13. Update root and section indexes, `REGISTRY.yml`, `STATUS.md`, and `logs/INDEX.md` to reflect the migrated structure.
-14. Ask for user confirmation before risky migration actions such as moving large source files, splitting ambiguous legacy logs, deleting old intake directories, or changing canonical meaning.
-15. Append a monthly wiki audit log entry describing the schema migration.
+14. Ask for user confirmation before risky migration actions such as moving large source files, deleting old intake directories, or changing canonical meaning.
+15. Append one ISO-week wiki audit entry describing the schema migration.
 
 ## Deterministic Structural Validation Workflow
 
@@ -128,18 +128,18 @@ When resolving an alert:
 3. Set alert status to `resolved`, `dismissed`, or `accepted-risk`.
 4. Add resolution date, resolution summary, and resolution evidence links.
 5. Move the alert from open to resolved/dismissed/accepted-risk section in `alerts/INDEX.md`.
-6. Append a wiki audit entry.
+6. Record the alert outcome using [Wiki Audit Log Workflow](#wiki-audit-log-workflow).
 
 Do not delete resolved alerts.
 
 ## Wiki Audit Log Workflow
 
-Use the audit log to track knowledge base edits, not project scope changes. `changes/CHANGELOG.md` records project history; `logs/wiki-log-YYYY-MM.md` records wiki maintenance history.
+Wiki logs record knowledge base edits; `changes/CHANGELOG.md` records project history.
 
-1. Ensure `logs/INDEX.md` and the current monthly `logs/wiki-log-YYYY-MM.md` exist.
-2. Append one entry after every meaningful wiki update.
-3. Use the parseable heading format: `## [YYYY-MM-DD] mode | WLOG-YYYYMMDD-NNN | Summary`.
-4. Include log ID, date, agent or actor when known, mode, trigger, changed wiki documents, related source paths, related IDs, summary, and open questions.
-5. Open question reconciliation entries should list resolved, partially resolved, superseded, dismissed, duplicated, and newly created `OQ-*` IDs when applicable.
-6. Keep entries concise. Link to detailed CRs, ADRs, scan reports, sync reports, lint reports, alerts, analysis pages, or technical docs instead of duplicating them.
-7. Do not rewrite older log entries except to fix broken formatting or links. Add a new corrective entry when history needs clarification.
+1. Log useful changes, including small informative corrections. Skip purely editorial/mechanical edits, incidental metadata updates, and checks with no changes unless explicitly requested. A new prompt alone does not require a new entry.
+2. Use `logs/wiki-log-YYYY-Www.md` with the ISO week-year and two-digit week (e.g. `2026-W38`, Monday–Sunday). Create it only for its first entry; include the week's date range and update `logs/INDEX.md`, newest weeks first.
+3. Extend only the last entry in the entire history if it belongs to the current ISO week and the same ongoing activity; otherwise append. Never revisit earlier entries: A → B → A creates three entries. If the activity or ordering is unclear, append.
+4. Extensions preserve the original ID, date, mode, heading, anchors, and prior information. Accumulate changed file links and relevant IDs without duplicates; integrate new results and every alert/open-question ID and outcome. Preserve successive state changes in the cumulative summary.
+5. Keep mandatory audit events separate and do not extend them on later prompts: init/scan baselines, migrations, material integrity/provenance repairs, document integration, pending review creation, and final integration/rejection/postponement or required intake rejection/supersession.
+6. Keep the heading `## [YYYY-MM-DD] mode | WLOG-YYYYMMDD-NNN | Summary` and unique daily IDs. The body contains `Changed:` links; add `Summary:`, `Questions:`, `Alerts:`, source references, or attribution only when applicable. Omit Trigger, duplicate metadata, empty fields, and `TBD`. Link to details instead of copying them.
+7. Retain required intake ID, final audit status, ledger summary, and exact ledger SHA-256. Earlier entries may only receive formatting/link repairs; clarify historical meaning with a new corrective entry.

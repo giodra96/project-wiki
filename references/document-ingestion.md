@@ -284,7 +284,7 @@ Document length, density, number of findings, cross-section impact, security/pri
 
 When a gate is required, `review.md` must focus on the exact blocking question, available options, evidence, affected canonical scope, and consequences. Do not duplicate the full source or create a second approval after the user resolves the blocking decision. Resume the same integration once, preserving all other unresolved matters as OQ or alerts.
 
-Logging is mandatory in both paths:
+Use the compact ISO-week [Wiki Audit Log Workflow](./maintenance-workflows.md#wiki-audit-log-workflow), retaining required intake audit evidence. Logging is mandatory in both paths:
 
 - Direct path: log the integrated KB update once.
 - Review path: log creation of pending `review.md`, then log final integration, rejection, or postponement separately.

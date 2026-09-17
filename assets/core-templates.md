@@ -90,8 +90,8 @@ Example entries:
 
 ```yaml
 schema: project-wiki
-schema_version: 1.5.1
-schema_updated: 2026-09-02
+schema_version: 1.6.0
+schema_updated: 2026-09-17
 last_migrated: YYYY-MM-DD
 maintained_by_skill: project-wiki
 notes: Current schema applied.
@@ -113,9 +113,10 @@ Preserve existing file content in both files and insert or replace only this mar
 When `.project-wiki/INDEX.md` exists:
 
 - Before implementing, modifying, debugging, refactoring, testing, documenting, or planning code, read `.project-wiki/INDEX.md` and only the linked context needed for the task.
-- After agent-made source changes, update affected wiki docs, indexes, `REGISTRY.yml`, `STATUS.md`, traceability, and the monthly wiki log before finishing. Record observed behavior in `technical/`; do not infer product requirements from code.
+- After agent-made source changes, update affected wiki docs, indexes, `REGISTRY.yml`, `STATUS.md`, traceability, and wiki logs before finishing. Record observed behavior in `technical/`; do not infer product requirements from code.
 - Use the project-wiki `update` workflow for notes, requirements, or external documents; `sync` for manual or external code changes; and `maintain` for validation or migration. Follow each workflow's deterministic scripts and never load PDF/DOCX sources directly into model context.
-- Reconcile existing open questions before creating new ones. Log every meaningful wiki edit. Write wiki content in English and reply in the user's language unless requested otherwise.
+- Reconcile existing open questions before creating new ones. Log every meaningful wiki edit, including useful small corrections; skip editorial/mechanical edits. Use ISO-week `logs/wiki-log-YYYY-Www.md`. Extend only the last entry in the entire history for the same ongoing activity in the current week; otherwise append. Preserve its ID, date, heading, and prior information; add changed files and alert/open-question outcomes. Keep mandatory audit events separate and follow the skill's Wiki Audit Log Workflow.
+- Write wiki content in English and reply in the user's language unless requested otherwise.
 
 Do not load the whole wiki. Route progressively from `.project-wiki/INDEX.md`.
 <!-- PROJECT-WIKI:END -->

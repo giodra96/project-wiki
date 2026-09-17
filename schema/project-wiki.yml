@@ -2,8 +2,8 @@ manifest_version: 1
 
 schema:
   name: project-wiki
-  version: 1.5.1
-  updated: '2026-09-02'
+  version: 1.6.0
+  updated: '2026-09-17'
 
 registries:
   document_version: 1
@@ -158,7 +158,7 @@ canonical_tree:
     - intake/documents/DOCIN-YYYYMMDD-001/review-progress.yml
     - intake/documents/DOCIN-YYYYMMDD-001/review.md
     - sources/processed/YYYY-MM/
-    - logs/wiki-log-YYYY-MM.md
+    - logs/wiki-log-YYYY-Www.md
 
 frontmatter:
   required_fields:
@@ -756,7 +756,7 @@ scaffold_contract:
         - Audit how and why wiki documents changed.
       key_files: []
       placeholders:
-        - No wiki audit log exists yet; complete init or scan to create the current monthly log.
+        - No wiki audit log exists yet; complete init or scan to create the current ISO-week log.
     templates/requirement.md:
       recipe: local-template
       asset: assets/requirements-change-templates.md

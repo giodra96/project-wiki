@@ -26,7 +26,7 @@ Run this automatically after source code changes made by the agent through chat.
 5. Run Open Questions Reconciliation when the implementation clarifies previously unresolved behavior.
 6. Update `REGISTRY.yml`, relevant section indexes, and `STATUS.md`.
 7. If the implementation introduced behavior not already represented by a requirement or CR, do not turn it into a confirmed product requirement by assumption. Document observed behavior in `technical/`; create a lightweight CR only when the change reflects a confirmed product or scope change, otherwise record an inferred open question when product intent needs confirmation.
-8. Append a wiki audit entry to `logs/wiki-log-YYYY-MM.md` when wiki files changed.
+8. Record wiki changes using [Wiki Audit Log Workflow](./maintenance-workflows.md#wiki-audit-log-workflow).
 9. In the final response, mention the wiki files updated alongside the code changes.
 
 ## Always-On Project Instruction Bootstrap
@@ -38,5 +38,5 @@ Install this during `init` and `scan` so future coding tasks consult and update 
    - `.github/copilot-instructions.md`
 2. Preserve existing file content in both files. Do not overwrite unrelated instructions.
 3. In each file, insert or replace only the block delimited by `<!-- PROJECT-WIKI:BEGIN -->` and `<!-- PROJECT-WIKI:END -->`.
-4. The block must instruct agents to read `.project-wiki/INDEX.md` before source code changes, update the wiki after agent-made source code changes, use `sync` for manual or external code changes, log meaningful wiki edits, write all wiki content in English, and respond to the user in the user's chat language.
-5. Include both created or updated instruction files in `logs/wiki-log-YYYY-MM.md`.
+4. Use the [Always-On Project Instruction Block](../assets/core-templates.md#always-on-project-instruction-block) to preserve context preflight, automatic updates, sync routing, logging rules, and language policy.
+5. Include both created or updated instruction files in `logs/wiki-log-YYYY-Www.md`.

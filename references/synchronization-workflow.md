@@ -14,5 +14,5 @@ Use this workflow for code changed manually, by another tool, or outside the cur
 6. Run [Open Questions Reconciliation](./update-workflows.md#open-questions-reconciliation-workflow) when manual code changes clarify or invalidate existing questions.
 7. Create a scan or sync note under `implementation/scans/` when the reconciliation is non-trivial, marking uncertain conclusions as `confidence: inferred`.
 8. Update `REGISTRY.yml`, relevant section indexes, and `STATUS.md` with the sync result and any stale or unresolved areas.
-9. Append a wiki audit entry to `logs/wiki-log-YYYY-MM.md` with the baseline, inspected source paths, and changed wiki documents.
+9. Record the sync result using [Wiki Audit Log Workflow](./maintenance-workflows.md#wiki-audit-log-workflow), including baseline and source paths when useful.
 10. Do not invent requirements from code changes. If manual code appears to change product behavior, record an open question or create a lightweight CR only when the user confirms it is an intended scope change.

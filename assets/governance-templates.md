@@ -247,7 +247,7 @@ confidence: confirmed
 ## Version Check
 
 - Previous schema version: TBD
-- Target schema version: 1.5.1
+- Target schema version: 1.6.0
 - Migration needed: yes | no
 
 ## Actions Applied
@@ -276,64 +276,33 @@ TBD
 ```markdown
 # Wiki Audit Logs
 
-This section records meaningful edits to the project knowledge base. It is separate from [changes/CHANGELOG.md](../changes/CHANGELOG.md), which records project changes.
+Meaningful knowledge base edits; project history is in [changes/CHANGELOG.md](../changes/CHANGELOG.md).
 
 ## When To Read
 
-- Audit how and why wiki documents changed.
-- Review which meeting notes, syncs, scans, or agent-made code changes affected the wiki.
-- Investigate stale, conflicting, or unexpected wiki content.
+- Audit wiki changes or investigate stale/conflicting content.
 
 ## Current Log
 
-- [wiki-log-YYYY-MM.md](./wiki-log-YYYY-MM.md)
+- [YYYY-Www · YYYY-MM-DD to YYYY-MM-DD](./wiki-log-YYYY-Www.md)
 
-## Monthly Logs
+## Weekly Logs
 
-- [wiki-log-YYYY-MM.md](./wiki-log-YYYY-MM.md)
-
-## Logging Rules
-
-- Append one concise entry after every meaningful wiki update.
-- Link to detailed CRs, ADRs, scan reports, sync reports, or technical docs instead of duplicating them.
-- Use heading format: `## [YYYY-MM-DD] mode | WLOG-YYYYMMDD-NNN | Summary`.
-- Do not rewrite older entries except to fix broken formatting or links.
+- [YYYY-Www · YYYY-MM-DD to YYYY-MM-DD](./wiki-log-YYYY-Www.md)
 ```
+
+List active weeks newest first. Follow [Wiki Audit Log Workflow](../references/maintenance-workflows.md#wiki-audit-log-workflow).
 
 ## Wiki Log File
 
 ```markdown
-# Wiki Log YYYY-MM
+# Wiki Log YYYY-Www
 
-This file is an append-only monthly audit trail of meaningful `.project-wiki/` updates for YYYY-MM.
+Period: YYYY-MM-DD to YYYY-MM-DD (Monday–Sunday).
 
 ## [YYYY-MM-DD] mode | WLOG-YYYYMMDD-001 | Short Summary
 
-Date: YYYY-MM-DD
-Agent: TBD
-Mode: init | scan | update | sync | maintain | auto-post-implementation
-Trigger: TBD
-
-Changed wiki documents:
-- TBD
-
-Related source paths:
-- TBD
-
-Related IDs:
-- TBD
-
-Open question reconciliation:
-- Resolved: TBD
-- Partially resolved: TBD
-- Superseded: TBD
-- Dismissed: TBD
-- Duplicated: TBD
-- Newly created: TBD
-
-Summary:
-TBD
-
-Open questions:
-- TBD
+Changed: [document.md](../section/document.md).
 ```
+
+Add `Summary:`, `Questions:`, or `Alerts:` only when applicable; omit Trigger, duplicate metadata, and empty fields. Follow [Wiki Audit Log Workflow](../references/maintenance-workflows.md#wiki-audit-log-workflow) for entry selection, cumulative updates, and required audit evidence.

@@ -11,7 +11,7 @@ Use these workflows for `init` and `scan`. Runtime paths, artifacts, generated v
 5. Ask for or extract only the minimum project identity needed for `PROJECT.md`: name, goal, domain, stakeholders, success criteria, constraints.
 6. Initialize `REGISTRY.yml` with root docs, placeholders, and any captured requirements.
 7. Initialize `STATUS.md` with current state, next documentation steps, and open questions.
-8. Append an initial wiki audit entry to `logs/wiki-log-YYYY-MM.md` listing generated and updated files, including the always-on project instruction files.
+8. Append an initial wiki audit entry to `logs/wiki-log-YYYY-Www.md` listing generated and updated files, including the always-on project instruction files, using the compact [Wiki Audit Log Workflow](./maintenance-workflows.md#wiki-audit-log-workflow).
 9. Keep requirements separate from future changes; do not create CR files for the initial plan unless the user explicitly describes a change from an earlier baseline.
 
 ## Scan Existing Project Workflow
@@ -36,4 +36,4 @@ Use these workflows for `init` and `scan`. Runtime paths, artifacts, generated v
 13. Add evidence-supported suggested follow-up questions, missing source material items, and risky assumptions to the scan report when they matter to implementation, scope, risk, or decision-making. Keep the report readable by grouping, splitting, or promoting important findings instead of dropping them.
 14. Create alerts for significant scan findings that represent real risk, contradiction, blocking gaps, or dangerous assumptions.
 15. Update root and section indexes, `REGISTRY.yml`, and `STATUS.md` with a compact discovery summary and links to detailed reports.
-16. Append a wiki audit entry to `logs/wiki-log-YYYY-MM.md` listing generated and updated wiki documents, including the always-on project instruction files.
+16. Append a wiki audit entry to `logs/wiki-log-YYYY-Www.md` listing generated and updated wiki documents, including the always-on project instruction files, using the compact [Wiki Audit Log Workflow](./maintenance-workflows.md#wiki-audit-log-workflow).

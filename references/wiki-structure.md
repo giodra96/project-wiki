@@ -60,7 +60,7 @@ Deterministic structural health is checked by `scripts/validate_wiki.py` before 
 
 Use `sources/inbox/` only as a drop zone for real source documents. Human instructions belong in `sources/INDEX.md`, not in `sources/inbox/README.md`. Agents must ignore inbox housekeeping files such as `README.md`, `.gitkeep`, `.DS_Store`, hidden files, files beginning with `_`, and temporary or partial download files.
 
-`logs/` stores an append-only audit trail of meaningful knowledge base edits. It records what wiki files changed, why they changed, which mode caused the change, and which source material or code paths were involved.
+`logs/` stores a compact chronological audit trail of knowledge base edits, organized by ISO week.
 
 `templates/` contains project-local templates copied from the skill template pack and adjusted for the project if needed.
 
@@ -298,34 +298,7 @@ Use [Open Questions Reconciliation Workflow](./update-workflows.md#open-question
 
 ## Wiki Audit Log
 
-`logs/wiki-log-YYYY-MM.md` records changes to the knowledge base itself. It is separate from `changes/CHANGELOG.md`.
-
-```text
-changes/CHANGELOG.md = what changed in the project
-logs/wiki-log-YYYY-MM.md = what changed in the knowledge base
-```
-
-Append one entry after every meaningful wiki update. Do not log purely mechanical timestamp-only edits unless they are part of a larger operation.
-
-Use this parseable heading format:
-
-```markdown
-## [YYYY-MM-DD] mode | WLOG-YYYYMMDD-NNN | Summary
-```
-
-Each audit log entry should include:
-
-- Stable log ID.
-- Date.
-- Agent or actor when known.
-- Mode: `init`, `scan`, `update`, `sync`, `maintain`, or `auto-post-implementation`.
-- Trigger or source material.
-- Changed wiki documents.
-- Related source paths when relevant.
-- Related requirement, CR, ADR, work item, scan, or sync IDs when relevant.
-- Summary.
-- Open questions or unresolved uncertainty.
-- Open question reconciliation results when relevant: resolved, partially resolved, superseded, dismissed, duplicated, and newly created `OQ-*` IDs.
+`logs/wiki-log-YYYY-Www.md` records knowledge base edits; `changes/CHANGELOG.md` records project history. Use [Wiki Audit Log Workflow](./maintenance-workflows.md#wiki-audit-log-workflow) for entry selection, weekly rotation, cumulative updates, and audit evidence, and the [Wiki Log File template](../assets/governance-templates.md#wiki-log-file) for the compact format.
 
 ## Placeholder Policy
 

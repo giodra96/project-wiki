@@ -28,7 +28,7 @@ Turn requirements, decisions, code knowledge, and project history into an indexe
 
 <p align="center">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg"></a>
-  <img alt="Wiki schema 1.5.1" src="https://img.shields.io/badge/wiki_schema-1.5.1-355c7d">
+  <img alt="Wiki schema 1.6.0" src="https://img.shields.io/badge/wiki_schema-1.6.0-355c7d">
   <img alt="Five project wiki workflows" src="https://img.shields.io/badge/workflows-5-2f855a">
   <img alt="IDE neutral agent skill" src="https://img.shields.io/badge/agent_skill-IDE--neutral-6b7280">
   <img alt="Markdown based storage" src="https://img.shields.io/badge/storage-Markdown-111827?logo=markdown">
@@ -248,6 +248,8 @@ The machine-readable tree, frontmatter fields, ID patterns, registry versions, a
 
 ## Core Indexing Model
 
+Wiki audit logs use `logs/wiki-log-YYYY-Www.md` (e.g. `2026-W38`). Only the last entry can be extended for the same activity in the current ISO week; other changes append a new entry. Logs stay compact; run `maintain` to migrate existing wikis to the current schema. See [Wiki Audit Log Workflow](./references/maintenance-workflows.md#wiki-audit-log-workflow).
+
 Navigation has three levels: root `INDEX.md`, section indexes, then focused records. `REGISTRY.yml` provides the machine-readable catalog, while `WIKI_VERSION.yml` records the applied version from the schema manifest.
 
 | Area | Responsibility |
@@ -259,7 +261,7 @@ Navigation has three levels: root `INDEX.md`, section indexes, then focused reco
 | `traceability/` | Links among requirements, decisions, documentation, and source paths |
 | `sources/` and `intake/` | Raw documents and immutable extraction provenance |
 | `analysis/`, `alerts/`, `maintenance/` | Durable synthesis, active risks, structural validation, and semantic lint |
-| `logs/` | Append-only audit history for wiki changes |
+| `logs/` | Compact ISO-week audit history; only the latest eligible activity entry can be extended |
 
 Agents move progressively from indexes to records instead of loading the whole knowledge base. Product intent stays in requirements; code-observed behavior stays technical until an explicit source confirms it as intent.
 

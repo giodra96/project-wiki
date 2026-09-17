@@ -291,7 +291,7 @@ Meaningful knowledge base edits; project history is in [changes/CHANGELOG.md](..
 - [YYYY-Www · YYYY-MM-DD to YYYY-MM-DD](./wiki-log-YYYY-Www.md)
 ```
 
-List active weeks newest first. Follow [Wiki Audit Log Workflow](../references/maintenance-workflows.md#wiki-audit-log-workflow).
+List active weeks newest first. Follow [Wiki Audit Log Workflow](../references/common-policies.md#wiki-audit-log-workflow).
 
 ## Wiki Log File
 
@@ -305,4 +305,4 @@ Period: YYYY-MM-DD to YYYY-MM-DD (Monday–Sunday).
 Changed: [document.md](../section/document.md).
 ```
 
-Add `Summary:`, `Questions:`, or `Alerts:` only when applicable; omit Trigger, duplicate metadata, and empty fields. Follow [Wiki Audit Log Workflow](../references/maintenance-workflows.md#wiki-audit-log-workflow) for entry selection, cumulative updates, and required audit evidence.
+Add `Summary:`, `Questions:`, or `Alerts:` only when applicable; omit Trigger, duplicate metadata, and empty fields. Follow [Wiki Audit Log Workflow](../references/common-policies.md#wiki-audit-log-workflow) for entry selection, cumulative updates, and required audit evidence.

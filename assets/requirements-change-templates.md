@@ -64,6 +64,26 @@ Use the Requirement Section template for each requirement stored here.
 - Traceability: [../../traceability/requirement-map.md](../../traceability/requirement-map.md)
 ```
 
+### Requirements Topic Scaling
+
+Do not predefine speculative product areas. Create a topic file only after an explicit source establishes a stable requirement area. A small project may use one concise topic such as `functional/core.md` or `non-functional/quality.md`; it must not place atomic records in an index.
+
+Each family index links to its topic files and contains no `REQ-*`, `NFR-*`, `CON-*`, or other embedded records. Update the family index, `requirements/INDEX.md`, `REGISTRY.yml`, and traceability whenever topics change.
+
+Store `REQ-*` only under `requirements/functional/`, `NFR-*` only under `requirements/non-functional/`, and `CON-*` only in `requirements/constraints.md`.
+
+`traceability/requirement-evidence.yml` is the machine-facing source of truth for atomic requirement provenance:
+
+```yaml
+version: 1
+records:
+  REQ-001:
+    - DOCIN-YYYYMMDD-001-CH-001
+    - DOCIN-YYYYMMDD-001-CH-002
+```
+
+Use full chunk IDs, one explicit entry per edge, with no ranges or duplicates. Keep chunk IDs and paths out of readable REQ/NFR/CON bodies; non-intake source paths remain valid elsewhere. The human requirement map is derived from this sidecar, and integrated ledger targets must match it bidirectionally.
+
 ## Open Question
 
 ```markdown

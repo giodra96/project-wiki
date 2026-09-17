@@ -1,12 +1,12 @@
 ---
 name: project-wiki
-description: 'Use when: creating, scanning, updating, syncing, maintaining, or automatically consulting a project wiki, knowledge base, requirements archive, change request history, ADR log, technical documentation, traceability map, wiki audit log, document intake for PDF/DOCX requirements, semantic lint, alerts, analysis notes, always-on project instructions, copilot-instructions, AGENTS.md, or agent-readable project memory in .project-wiki/. Works for Copilot, Claude Code, Codex, and other IDE chat agents.'
+description: 'Create, scan, update, sync, and maintain .project-wiki/ project knowledge bases, including requirements, document intake, and traceability. Consult and update an existing project wiki during coding tasks.'
 argument-hint: 'init | scan | update | sync | maintain'
 ---
 
 # Project Wiki
 
-Create and maintain an agent-readable project knowledge base in `.project-wiki/` without loading the entire wiki into context. The skill is IDE-neutral.
+Maintain an agent-readable knowledge base in `.project-wiki/`. Load only the workflow and project context needed for the task.
 
 Current project wiki schema version: `1.6.0` (canonical value: `./schema/project-wiki.yml`).
 
@@ -25,14 +25,14 @@ Select one primary mode for an explicit wiki request and load only its workflow:
 | Before implementing, modifying, debugging, refactoring, testing, documenting, or planning code when `.project-wiki/INDEX.md` exists | [Automatic Context Preflight](./references/automatic-workflows.md#automatic-context-preflight) |
 | After agent-made source changes | [Automatic Post-Implementation Wiki Update](./references/automatic-workflows.md#automatic-post-implementation-wiki-update) |
 
-Load [Document Templates](./assets/document-templates.md) only when creating an artifact. Load [Wiki Structure](./references/wiki-structure.md) or the [Schema Contract](./schema/project-wiki.yml) only when exact structure or contract values are needed. Use [Common Policies](./references/common-policies.md) when finalizing wiki edits.
+Use [Document Templates](./assets/document-templates.md) when creating artifacts and [Requirement Authoring](./assets/requirements-change-templates.md#requirements-topic-scaling) for atomic REQ/NFR/CON records. Read [Wiki Structure](./references/wiki-structure.md) or [Schema Contract](./schema/project-wiki.yml) only for exact structure or contract values. Finalize edits with [Common Policies](./references/common-policies.md), including reconciliation and audit logging.
 
 ## Operating Contract
 
 1. Read `.project-wiki/INDEX.md` first when it exists, follow its routes, and open only the smallest relevant set of files. Use `REGISTRY.yml` only when indexes do not resolve the task.
-2. Before code planning or changes, run the automatic context preflight. After agent-made source changes, run the automatic post-implementation workflow; reserve `sync` for external or manual changes.
+2. Run the automatic workflows around code work when the wiki exists; reserve `sync` for external or manual changes.
 3. Follow the selected workflow completely. Prefer the supplied deterministic scripts over reproducing structural, validation, duplicate, extraction, or ledger logic in model reasoning.
-4. After every meaningful wiki edit, reconcile affected indexes, `REGISTRY.yml`, `STATUS.md`, and traceability; record it using [Wiki Audit Log Workflow](./references/maintenance-workflows.md#wiki-audit-log-workflow).
+4. Finalize every meaningful edit with the shared checklist and audit log; reconcile only affected records.
 
 Use `scripts/wiki_scope.py` (`list`, `read`, `search`, `diff`) for repository source access during wiki work; helpers apply `.project-wiki/.wikiignore` automatically. Consult existing wiki history normally. Load [Repository Source Scope](./references/repository-scope.md) only for configuration or troubleshooting.
 

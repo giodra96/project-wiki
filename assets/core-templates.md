@@ -112,14 +112,12 @@ Preserve existing file content in both files and insert or replace only this mar
 
 When `.project-wiki/INDEX.md` exists:
 
-- For wiki source discovery, reads, searches, and diffs, use the project-wiki `wiki_scope.py` helper, which applies `.project-wiki/.wikiignore` automatically. Existing wiki history remains consultable; an exclusion alone does not indicate missing sources or drift.
-- Before implementing, modifying, debugging, refactoring, testing, documenting, or planning code, read `.project-wiki/INDEX.md` and only the linked context needed for the task.
-- After agent-made source changes, update affected wiki docs, indexes, `REGISTRY.yml`, `STATUS.md`, traceability, and wiki logs before finishing. Record observed behavior in `technical/`; do not infer product requirements from code.
-- Use the project-wiki `update` workflow for notes, requirements, or external documents; `sync` for manual or external code changes; and `maintain` for validation or migration. Follow each workflow's deterministic scripts and never load PDF/DOCX sources directly into model context.
-- Reconcile existing open questions before creating new ones. Log every meaningful wiki edit, including useful small corrections; skip editorial/mechanical edits. Use ISO-week `logs/wiki-log-YYYY-Www.md`. Extend only the last entry in the entire history for the same ongoing activity in the current week; otherwise append. Preserve its ID, date, heading, and prior information; add changed files and alert/open-question outcomes. Keep mandatory audit events separate and follow the skill's Wiki Audit Log Workflow.
+- Before implementing, modifying, debugging, refactoring, testing, documenting, or planning code, read it and only the linked context needed for the task.
+- For wiki source access, use the skill's `wiki_scope.py` with `.project-wiki/.wikiignore`. Existing wiki history remains consultable; exclusions alone do not indicate drift.
+- After agent-made source changes, update affected wiki records, indexes, registry, status, traceability, and logs. Record observed behavior in `technical/`; do not infer product requirements from code.
+- Use the `update` workflow for notes/documents, `sync` for external code changes, and `maintain` for validation/migration. Follow the skill's deterministic helpers; never load PDF/DOCX sources directly into model context.
+- Reconcile existing open questions before adding new ones. Log every meaningful wiki edit using the skill's Wiki Audit Log Workflow (`references/common-policies.md`), including its cumulative-entry rules and separate mandatory audit events.
 - Write wiki content in English and reply in the user's language unless requested otherwise.
-
-Do not load the whole wiki. Route progressively from `.project-wiki/INDEX.md`.
 <!-- PROJECT-WIKI:END -->
 ```
 

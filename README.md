@@ -187,7 +187,7 @@ Project Wiki is built around three distinct architectural layers:
 
 - `SKILL.md` is the runtime entrypoint and links directly to the focused workflow for each mode or automatic trigger.
 - `schema/project-wiki.yml` is the machine-readable contract.
-- `references/` owns focused workflow, structure, and ingestion guidance.
+- `references/` owns focused workflow, structure, and ingestion guidance. Shared finalization, open-question reconciliation, and audit logging live together in `references/common-policies.md`; instruction bootstrap lives in the initialization workflow. Document intake has one operational procedure, with extraction internals at the end of the same reference.
 - `assets/document-templates.md` routes to focused, copyable template catalogs.
 - `scripts/` provides exclusive new-wiki scaffolding, inbox deduplication, document extraction, structural validation, and contract drift checks.
 
@@ -224,7 +224,7 @@ After initialization, ordinary coding requests do not need a wiki command:
 - **For durable answers**, it updates the owning canonical page or files a linked analysis only when the result has lasting project value.
 - **During `init` and `scan`**, it installs a marked project-wiki block in both `AGENTS.md` and `.github/copilot-instructions.md` without overwriting unrelated instructions.
 
-See [Automatic Context Preflight](references/automatic-workflows.md#automatic-context-preflight), [Automatic Post-Implementation Wiki Update](references/automatic-workflows.md#automatic-post-implementation-wiki-update), and [Always-On Project Instruction Bootstrap](references/automatic-workflows.md#always-on-project-instruction-bootstrap) for the full procedures.
+See [Automatic Context Preflight](references/automatic-workflows.md#automatic-context-preflight), [Automatic Post-Implementation Wiki Update](references/automatic-workflows.md#automatic-post-implementation-wiki-update), and [Always-On Project Instruction Bootstrap](references/initialization-workflows.md#always-on-project-instruction-bootstrap) for the full procedures.
 
 ## Generated Wiki
 
@@ -263,7 +263,7 @@ The machine-readable tree, frontmatter fields, ID patterns, registry versions, a
 
 ## Core Indexing Model
 
-Wiki audit logs use `logs/wiki-log-YYYY-Www.md` (e.g. `2026-W38`). Only the last entry can be extended for the same activity in the current ISO week; other changes append a new entry. Logs stay compact; run `maintain` to migrate existing wikis to the current schema. See [Wiki Audit Log Workflow](./references/maintenance-workflows.md#wiki-audit-log-workflow).
+Wiki audit logs use `logs/wiki-log-YYYY-Www.md` (e.g. `2026-W38`). Only the last entry can be extended for the same activity in the current ISO week; other changes append a new entry. Logs stay compact; run `maintain` to migrate existing wikis to the current schema. See [Wiki Audit Log Workflow](./references/common-policies.md#wiki-audit-log-workflow).
 
 Navigation has three levels: root `INDEX.md`, section indexes, then focused records. `REGISTRY.yml` provides the machine-readable catalog, while `WIKI_VERSION.yml` records the applied version from the schema manifest.
 
@@ -308,7 +308,7 @@ Source inbox registry checks and wiki validation require PyYAML; wiki link and h
 python3 -m pip install -r /path/to/project-wiki/scripts/requirements.txt
 ```
 
-The intake workflow, supported formats, chunking behavior, direct-integration policy, blocking review gate, and status semantics live in [references/document-ingestion.md](references/document-ingestion.md). The focused `review.md` body lives in [assets/intake-source-templates.md](assets/intake-source-templates.md#document-intake-review), while source inbox actions live in [references/update-workflows.md](references/update-workflows.md#source-inbox-workflow).
+The intake workflow, supported formats, chunking behavior, direct-integration policy, blocking review gate, and status semantics live in [references/document-ingestion.md](references/document-ingestion.md). The focused `review.md` body lives in [assets/intake-source-templates.md](assets/intake-source-templates.md#document-intake-review), while source inbox actions live in [references/source-inbox.md](references/source-inbox.md#source-inbox-workflow).
 
 Each intake document contains provenance in `source-info.yml`, compact routing in `intake-report.md`, a machine-facing `chunks.json` manifest, exhaustive review coverage in `review-progress.yml`, full-text files under `chunks/`, and a compact extraction index in `extracted.md`.
 
@@ -337,7 +337,11 @@ The README is an orientation guide. The manifest is canonical for machine-readab
 | Human structure, registry, linking, and lifecycle policy | [references/wiki-structure.md](references/wiki-structure.md) |
 | Runtime routing by mode or automatic trigger | [SKILL.md](SKILL.md) |
 | Automatic context, initialization, update/intake, sync, and maintenance procedures | [references/automatic-workflows.md](references/automatic-workflows.md), [references/initialization-workflows.md](references/initialization-workflows.md), [references/update-workflows.md](references/update-workflows.md), [references/synchronization-workflow.md](references/synchronization-workflow.md), [references/maintenance-workflows.md](references/maintenance-workflows.md) |
-| External document intake, chunking, direct integration, blocking review decisions | [references/document-ingestion.md](references/document-ingestion.md) |
+| Shared finalization, open questions, audit logging | [common-policies.md](references/common-policies.md) |
+| Atomic requirement locations and evidence | [Requirements Topic Scaling](assets/requirements-change-templates.md#requirements-topic-scaling) |
+| Source inbox and always-on instruction installation | [source-inbox.md](references/source-inbox.md), [initialization-workflows.md](references/initialization-workflows.md#always-on-project-instruction-bootstrap) |
+| External document intake, review, direct integration, blocking decisions | [document-ingestion.md](references/document-ingestion.md) |
+| Extraction internals and artifact troubleshooting (optional) | [Implementation Details](references/document-ingestion.md#implementation-details) |
 | Template routing by artifact family | [assets/document-templates.md](assets/document-templates.md) |
 | Copyable core, requirement/change, technical/implementation, intake/source, and governance templates | [assets/core-templates.md](assets/core-templates.md), [assets/requirements-change-templates.md](assets/requirements-change-templates.md), [assets/technical-implementation-templates.md](assets/technical-implementation-templates.md), [assets/intake-source-templates.md](assets/intake-source-templates.md), [assets/governance-templates.md](assets/governance-templates.md) |
 | Documentation and template drift checks | [scripts/check_contracts.py](scripts/check_contracts.py) |

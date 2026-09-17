@@ -30,7 +30,7 @@ Every project wiki must include `.project-wiki/WIKI_VERSION.yml`.
 
 Use the complete [WIKI_VERSION.yml template](../assets/core-templates.md#wiki_versionyml). Exact schema values come from the machine-readable manifest.
 
-During `maintain`, compare `schema_version` with the current schema version declared in this reference. If the file is missing, treat the wiki as `pre-versioned` and run Schema Migration Workflow. Migration must preserve existing content and log changes.
+During `maintain`, compare `schema_version` with the current schema version in `schema/project-wiki.yml`. If the file is missing, treat the wiki as `pre-versioned` and run Schema Migration Workflow. Migration must preserve existing content and log changes.
 
 ## Section Responsibilities
 
@@ -68,23 +68,7 @@ Use `sources/inbox/` only as a drop zone for real source documents. Human instru
 
 ## Requirements Topic Scaling
 
-Do not predefine speculative product areas. Create a topic file only after an explicit source establishes a stable requirement area. A small project may use one concise topic such as `functional/core.md` or `non-functional/quality.md`; it must not place atomic records in an index.
-
-Each family index links to its topic files and contains no `REQ-*`, `NFR-*`, `CON-*`, or other embedded records. Update the family index, `requirements/INDEX.md`, `REGISTRY.yml`, and traceability whenever topics change.
-
-Store `REQ-*` only under `requirements/functional/`, `NFR-*` only under `requirements/non-functional/`, and `CON-*` only in `requirements/constraints.md`.
-
-`traceability/requirement-evidence.yml` is the machine-facing source of truth for atomic requirement provenance:
-
-```yaml
-version: 1
-records:
-  REQ-001:
-    - DOCIN-YYYYMMDD-001-CH-001
-    - DOCIN-YYYYMMDD-001-CH-002
-```
-
-Use full chunk IDs, one explicit entry per edge, with no ranges or duplicates. Keep chunk IDs and paths out of readable REQ/NFR/CON bodies; non-intake source paths remain valid elsewhere. The human requirement map is derived from this sidecar, and integrated ledger targets must match it bidirectionally.
+Use [Requirements Topic Scaling](../assets/requirements-change-templates.md#requirements-topic-scaling) for atomic record locations, topic indexes, and the bidirectional requirement-evidence sidecar contract.
 
 ## Always-On Instruction Files
 
@@ -296,11 +280,11 @@ Each open question entry should include:
 - Resolution or partial resolution notes.
 - Resolution evidence when applicable.
 
-Use [Open Questions Reconciliation Workflow](./update-workflows.md#open-questions-reconciliation-workflow) for update and logging rules.
+Use [Open Questions Reconciliation Workflow](./common-policies.md#open-questions-reconciliation-workflow) for update and logging rules.
 
 ## Wiki Audit Log
 
-`logs/wiki-log-YYYY-Www.md` records knowledge base edits; `changes/CHANGELOG.md` records project history. Use [Wiki Audit Log Workflow](./maintenance-workflows.md#wiki-audit-log-workflow) for entry selection, weekly rotation, cumulative updates, and audit evidence, and the [Wiki Log File template](../assets/governance-templates.md#wiki-log-file) for the compact format.
+`logs/wiki-log-YYYY-Www.md` records knowledge base edits; `changes/CHANGELOG.md` records project history. Use [Wiki Audit Log Workflow](./common-policies.md#wiki-audit-log-workflow) for entry selection, weekly rotation, cumulative updates, and audit evidence, and the [Wiki Log File template](../assets/governance-templates.md#wiki-log-file) for the compact format.
 
 ## Placeholder Policy
 

@@ -11,8 +11,8 @@ Use this workflow for code changed manually, by another tool, or outside the cur
 3. Use `wiki_scope.py read`/`search` for affected sources, new files not shown by diff, and nearby tests/configuration. If no changes remain, report that no in-scope changes need synchronization.
 4. Update affected technical docs under `technical/` to reflect current code behavior.
 5. Update `traceability/code-map.md` and any relevant requirement or change impact maps.
-6. Run [Open Questions Reconciliation](./update-workflows.md#open-questions-reconciliation-workflow) when manual code changes clarify or invalidate existing questions.
+6. Run [Open Questions Reconciliation](./common-policies.md#open-questions-reconciliation-workflow) when manual code changes clarify or invalidate existing questions.
 7. Create a scan or sync note under `implementation/scans/` when the reconciliation is non-trivial, marking uncertain conclusions as `confidence: inferred`.
 8. Update `REGISTRY.yml`, relevant section indexes, and `STATUS.md` with the sync result and any stale or unresolved areas.
-9. Record the sync result using [Wiki Audit Log Workflow](./maintenance-workflows.md#wiki-audit-log-workflow), including baseline and source paths when useful.
+9. Record the sync result using [Wiki Audit Log Workflow](./common-policies.md#wiki-audit-log-workflow), including baseline and source paths when useful.
 10. Do not invent requirements from code changes. If manual code appears to change product behavior, record an open question or create a lightweight CR only when the user confirms it is an intended scope change.

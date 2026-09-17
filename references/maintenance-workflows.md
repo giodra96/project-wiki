@@ -10,14 +10,14 @@ Use this mode to keep the wiki healthy. `maintain` includes structural cleanup a
 2. Run [Deterministic Structural Validation Workflow](#deterministic-structural-validation-workflow). Apply low-risk structural fixes and rerun the validator until it passes or only blocked findings remain.
 3. Do not ask the model to rediscover broken links, malformed YAML/frontmatter, duplicate IDs, invalid statuses, missing registry paths, or canonical-tree gaps already covered by the validator.
 4. Check whether new CRs, ADRs, module docs, or work items are meaningfully represented in traceability maps; path and ID validity are deterministic, while adequacy of the relationship is semantic.
-5. Run [Open Questions Reconciliation](./update-workflows.md#open-questions-reconciliation-workflow) to close, narrow, supersede, dismiss, or de-duplicate stale questions when evidence supports it.
+5. Run [Open Questions Reconciliation](./common-policies.md#open-questions-reconciliation-workflow) to close, narrow, supersede, dismiss, or de-duplicate stale questions when evidence supports it.
 6. Run [Semantic Lint Workflow](#semantic-lint-workflow) only after deterministic validation results are known.
 7. Review open alerts and update alert status when evidence supports resolution, dismissal, or accepted risk.
 8. Compact verbose index content by moving detail into the appropriate document.
 9. Mark stale documents as `superseded`, `deprecated`, or `placeholder` rather than deleting history.
 10. Apply low-risk fixes directly. For high-impact contradictions, stale claims, alert resolutions, or canonical meaning changes, write the lint finding and ask for user confirmation before changing canonical docs.
 11. Update `STATUS.md` with deterministic validation status, semantic maintenance results, active alert counts, open question counts, schema version status, and compact discovery summary links.
-12. Record maintenance changes using [Wiki Audit Log Workflow](#wiki-audit-log-workflow).
+12. Record maintenance changes using [Wiki Audit Log Workflow](./common-policies.md#wiki-audit-log-workflow).
 
 ## Schema Migration Workflow
 
@@ -37,10 +37,10 @@ The skill's current schema contract comes from `schema/project-wiki.yml`. Human 
    - Remove an empty legacy overview after updating links and registry. If it contains unresolved content, retain it temporarily as `superseded` until migration is complete.
 7. Update `.project-wiki/WIKI_VERSION.yml` to the current schema version only after all migration actions succeed.
 8. Ensure `sources/SOURCE_REGISTRY.yml` exists and uses version `1`.
-9. Align logs and local templates with [Wiki Audit Log Workflow](#wiki-audit-log-workflow).
+9. Align logs and local templates with [Wiki Audit Log Workflow](./common-policies.md#wiki-audit-log-workflow).
 10. Detect old intake artifacts where `extracted.md` or `chunks.json` contains full document text. Do not read those files. Mark the intake as `superseded` or report that it should be regenerated with the current script before review.
 11. For active or reviewed legacy intakes missing `review-progress.yml`, create a ledger from `chunks.json` with every chunk pending and resume review. For terminal legacy intakes, create a complete ledger with explicit legacy skip reasons rather than claiming retrospective semantic coverage.
-12. Update the always-on instruction block in both `AGENTS.md` and `.github/copilot-instructions.md` using [Always-On Project Instruction Bootstrap](./automatic-workflows.md#always-on-project-instruction-bootstrap).
+12. Update the always-on instruction block in both `AGENTS.md` and `.github/copilot-instructions.md` using [Always-On Project Instruction Bootstrap](./initialization-workflows.md#always-on-project-instruction-bootstrap).
 13. Update root and section indexes, `REGISTRY.yml`, `STATUS.md`, and `logs/INDEX.md` to reflect the migrated structure.
 14. Ask for user confirmation before risky migration actions such as moving large source files, deleting old intake directories, or changing canonical meaning.
 15. Append one ISO-week wiki audit entry describing the schema migration.
@@ -128,18 +128,10 @@ When resolving an alert:
 3. Set alert status to `resolved`, `dismissed`, or `accepted-risk`.
 4. Add resolution date, resolution summary, and resolution evidence links.
 5. Move the alert from open to resolved/dismissed/accepted-risk section in `alerts/INDEX.md`.
-6. Record the alert outcome using [Wiki Audit Log Workflow](#wiki-audit-log-workflow).
+6. Record the alert outcome using [Wiki Audit Log Workflow](./common-policies.md#wiki-audit-log-workflow).
 
 Do not delete resolved alerts.
 
 ## Wiki Audit Log Workflow
 
-Wiki logs record knowledge base edits; `changes/CHANGELOG.md` records project history.
-
-1. Log useful changes, including small informative corrections. Skip purely editorial/mechanical edits, incidental metadata updates, and checks with no changes unless explicitly requested. A new prompt alone does not require a new entry.
-2. Use `logs/wiki-log-YYYY-Www.md` with the ISO week-year and two-digit week (e.g. `2026-W38`, Monday–Sunday). Create it only for its first entry; include the week's date range and update `logs/INDEX.md`, newest weeks first.
-3. Extend only the last entry in the entire history if it belongs to the current ISO week and the same ongoing activity; otherwise append. Never revisit earlier entries: A → B → A creates three entries. If the activity or ordering is unclear, append.
-4. Extensions preserve the original ID, date, mode, heading, anchors, and prior information. Accumulate changed file links and relevant IDs without duplicates; integrate new results and every alert/open-question ID and outcome. Preserve successive state changes in the cumulative summary.
-5. Keep mandatory audit events separate and do not extend them on later prompts: init/scan baselines, migrations, material integrity/provenance repairs, document integration, pending review creation, and final integration/rejection/postponement or required intake rejection/supersession.
-6. Keep the heading `## [YYYY-MM-DD] mode | WLOG-YYYYMMDD-NNN | Summary` and unique daily IDs. The body contains `Changed:` links; add `Summary:`, `Questions:`, `Alerts:`, source references, or attribution only when applicable. Omit Trigger, duplicate metadata, empty fields, and `TBD`. Link to details instead of copying them.
-7. Retain required intake ID, final audit status, ledger summary, and exact ledger SHA-256. Earlier entries may only receive formatting/link repairs; clarify historical meaning with a new corrective entry.
+Use [Wiki Audit Log Workflow](./common-policies.md#wiki-audit-log-workflow) when recording changes; it owns entry selection, weekly rotation, cumulative updates, and intake audit evidence.

@@ -5,6 +5,7 @@ Use these workflows for `init` and `scan`. Runtime paths, artifacts, generated v
 ## Init Workflow
 
 1. Require `.project-wiki/` to be absent. Run `python3 /path/to/project-wiki/scripts/wiki_scaffold.py create --wiki-root .project-wiki`. The helper generates the canonical tree in same-filesystem staging, validates scaffold recipes and the resulting wiki, and publishes only with an exclusive no-replace operation.
+   - The scaffold includes a comments-only `.project-wiki/.wikiignore`. Users can populate it after `init` and before `scan`; patterns are repository-root-relative.
 2. Treat `scaffold_created: true` as structural setup only. The helper deliberately reports `project_initialization_complete: false` and `semantic_content_captured: false`; continue every remaining step below. If `.project-wiki/` already exists, do not run or bypass the helper and do not merge missing files mechanically; inspect the existing wiki and use `maintain` or schema migration as appropriate.
 3. Create or update both always-on project instruction files (`AGENTS.md` and `.github/copilot-instructions.md`) using [Always-On Project Instruction Bootstrap](./automatic-workflows.md#always-on-project-instruction-bootstrap).
 4. Preserve untouched scaffold documents as `status: placeholder` and `confidence: unknown` until project-specific evidence is captured.
@@ -16,7 +17,7 @@ Use these workflows for `init` and `scan`. Runtime paths, artifacts, generated v
 
 ## Scan Existing Project Workflow
 
-1. Read `.project-wiki/INDEX.md` if it exists. If no wiki exists, inspect the repository narrowly first: root files, package/build config, source tree, tests, entrypoints, API routes, data schemas, deployment files, and README/docs.
+1. Read `.project-wiki/INDEX.md` if it exists. Use `wiki_scope.py list` for source discovery and `read`/`search` for targeted source inspection. If no wiki exists, there are no exclusions; use `init` first when exclusions are needed for the first scan. Inspect only included paths, narrowly: root files, package/build config, source tree, tests, entrypoints, API routes, data schemas, deployment files, and README/docs.
 2. If `.project-wiki/` is absent, run `python3 /path/to/project-wiki/scripts/wiki_scaffold.py create --wiki-root .project-wiki`. Treat its output as structural setup only and continue the scan. Never run it against an existing, partial, or legacy wiki.
 3. If an older wiki exists, run [Schema Migration Workflow](./maintenance-workflows.md#schema-migration-workflow) before generating new scan artifacts.
 4. Create or update both always-on project instruction files (`AGENTS.md` and `.github/copilot-instructions.md`) using [Always-On Project Instruction Bootstrap](./automatic-workflows.md#always-on-project-instruction-bootstrap).

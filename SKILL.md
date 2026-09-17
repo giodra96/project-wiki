@@ -34,6 +34,8 @@ Load [Document Templates](./assets/document-templates.md) only when creating an 
 3. Follow the selected workflow completely. Prefer the supplied deterministic scripts over reproducing structural, validation, duplicate, extraction, or ledger logic in model reasoning.
 4. After every meaningful wiki edit, reconcile affected indexes, `REGISTRY.yml`, `STATUS.md`, and traceability; record it using [Wiki Audit Log Workflow](./references/maintenance-workflows.md#wiki-audit-log-workflow).
 
+Use `scripts/wiki_scope.py` (`list`, `read`, `search`, `diff`) for repository source access during wiki work; helpers apply `.project-wiki/.wikiignore` automatically. Consult existing wiki history normally. Load [Repository Source Scope](./references/repository-scope.md) only for configuration or troubleshooting.
+
 ## Invariants
 
 - Keep stable IDs, required frontmatter, relative wiki links, and the complete canonical structure. Preserve history and original requirements rather than silently replacing them.

@@ -47,6 +47,7 @@ review_progress:
     - conflict
 
 semantic_paths:
+  wiki_ignore_file: .wikiignore
   wiki_version_file: WIKI_VERSION.yml
   document_registry_file: REGISTRY.yml
   source_registry_file: sources/SOURCE_REGISTRY.yml
@@ -83,6 +84,7 @@ canonical_tree:
     - logs
     - templates
   required_files:
+    - .wikiignore
     - INDEX.md
     - WIKI_VERSION.yml
     - REGISTRY.yml
@@ -532,6 +534,8 @@ template_section_inventory:
 
 scaffold_contract:
   files:
+    .wikiignore:
+      recipe: wiki-ignore
     INDEX.md:
       recipe: rendered-template
       asset: assets/core-templates.md
@@ -858,6 +862,11 @@ documentation_contract:
     - alerts/
     - logs/
   required_path_references:
+    .wikiignore:
+      - SKILL.md
+      - README.md
+      - references/repository-scope.md
+      - assets/core-templates.md
     changes/decisions:
       - README.md
       - references/update-workflows.md

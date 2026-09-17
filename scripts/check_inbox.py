@@ -15,6 +15,12 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 try:
+    from .wiki_scope import WikiScope, WikiScopeError
+except ImportError:
+    from wiki_scope import WikiScope, WikiScopeError
+
+
+try:
     from .schema_contract import (
         SchemaContract,
         SchemaContractDependencyError,
@@ -147,7 +153,7 @@ def main() -> int:
         report = check_inbox(wiki_root)
         if args.quarantine_skips:
             report = quarantine_skipped_files(wiki_root, report)
-    except InboxCheckError as error:
+    except (InboxCheckError, WikiScopeError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
     except OSError as error:
@@ -174,7 +180,7 @@ def check_inbox(wiki_root: Path) -> InboxReport:
         contract,
     )
     validate_processed_registry_sources(wiki_root, registry_sources, intake_sources, contract)
-    source_paths, ignored = discover_source_files(wiki_root, inbox_root)
+    source_paths, ignored = discover_source_files(wiki_root, inbox_root, contract)
     inbox_files = tuple(inspect_inbox_file(wiki_root, path) for path in source_paths)
     decisions = classify_inbox_files(wiki_root, inbox_files, registry_sources, intake_sources, contract)
     validate_decision_contract(decisions, contract)
@@ -263,6 +269,7 @@ def validate_processed_registry_sources(
     contract: SchemaContract,
 ) -> None:
     intake_by_id = {source.id: source for source in intake_sources}
+    scope = WikiScope(wiki_root, contract)
     for source in registry_sources:
         if source.status != contract.generated_values["source_processed_status"]:
             continue
@@ -283,6 +290,8 @@ def validate_processed_registry_sources(
         if source.current_path is None:
             raise InboxCheckError(f"processed source {source.id} has no current_path")
         current_path = wiki_root / source.current_path
+        if scope.ignored(current_path):
+            continue
         if not current_path.is_file():
             raise InboxCheckError(f"processed source {source.id} current_path does not exist")
         if sha256_file(current_path) != source.sha256:
@@ -295,6 +304,10 @@ def load_intake_history(documents_root: Path, contract: SchemaContract) -> tuple
     if not documents_root.is_dir():
         raise InboxCheckError(f"intake documents path is not a directory: {documents_root}")
 
+    wiki_root = documents_root
+    for _ in Path(contract.semantic_paths.intake_documents_directory).parts:
+        wiki_root = wiki_root.parent
+    scope = WikiScope(wiki_root, contract)
     sources: list[IntakeSource] = []
     seen_ids: set[str] = set()
     intake_pattern = re.compile(contract.id_pattern_strings["intake-document"])
@@ -334,6 +347,7 @@ def load_intake_history(documents_root: Path, contract: SchemaContract) -> tuple
             document_root,
             payload.get("copied_source_path"),
             contract.intake_artifacts.copied_source_stem,
+            scope,
         )
         if copied_source_path is not None and sha256_file(copied_source_path) != source_hash.lower():
             raise InboxCheckError(f"intake history {intake_id} copied source hash does not match metadata")
@@ -407,6 +421,7 @@ def resolve_copied_source_path(
     document_root: Path,
     value: object,
     copied_source_stem: str,
+    scope: WikiScope | None = None,
 ) -> Path | None:
     if value is None:
         return None
@@ -418,6 +433,8 @@ def resolve_copied_source_path(
         candidate = declared
     else:
         candidate = document_root / declared.name
+    if scope is not None and scope.ignored(candidate):
+        return None
     if not candidate.is_file() or not candidate.resolve().is_relative_to(document_root.resolve()):
         raise InboxCheckError(f"intake history {document_root.name} copied source is missing")
     if candidate.stem != copied_source_stem:
@@ -442,7 +459,11 @@ def load_yaml_mapping(path: Path, label: str) -> dict[str, Any]:
 def discover_source_files(
     wiki_root: Path,
     inbox_root: Path,
+    contract: SchemaContract | None = None,
 ) -> tuple[tuple[Path, ...], tuple[IgnoredFile, ...]]:
+    scope = WikiScope(wiki_root, contract)
+    if scope.ignored(inbox_root.as_posix() + "/"):
+        return (), ()
     if not inbox_root.exists():
         return (), ()
     if not inbox_root.is_dir():
@@ -451,7 +472,7 @@ def discover_source_files(
     sources: list[Path] = []
     ignored: list[IgnoredFile] = []
     paths = sorted(
-        (path for path in inbox_root.rglob("*") if not path.is_dir()),
+        scope.source_files(inbox_root, skip_wiki=False),
         key=lambda path: (path.relative_to(inbox_root).as_posix().casefold(), path.as_posix()),
     )
     for path in paths:

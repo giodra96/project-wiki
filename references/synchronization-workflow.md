@@ -7,8 +7,8 @@ Use this workflow for code changed manually, by another tool, or outside the cur
 `sync` is not the same as `maintain`: sync reconciles wiki content with code reality; maintain audits wiki structure and consistency.
 
 1. Read `.project-wiki/INDEX.md`, `REGISTRY.yml`, `STATUS.md`, and `technical/codebase-map.md` if present.
-2. Identify changed source paths since the last documented scan or since the user's stated baseline. Prefer git status, git diff, recent files, or user-provided paths when available.
-3. Inspect only the changed source areas and their nearest tests/configuration.
+2. Identify source changes with `wiki_scope.py diff`, using `--base` for the last documented scan or the user's stated baseline when available.
+3. Use `wiki_scope.py read`/`search` for affected sources, new files not shown by diff, and nearby tests/configuration. If no changes remain, report that no in-scope changes need synchronization.
 4. Update affected technical docs under `technical/` to reflect current code behavior.
 5. Update `traceability/code-map.md` and any relevant requirement or change impact maps.
 6. Run [Open Questions Reconciliation](./update-workflows.md#open-questions-reconciliation-workflow) when manual code changes clarify or invalidate existing questions.

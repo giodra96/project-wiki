@@ -22,6 +22,8 @@ Use [`schema/project-wiki.yml`](../schema/project-wiki.yml) for exact tree entri
 
 `GLOSSARY.md` stores domain terms, abbreviations, naming conventions, and ambiguous vocabulary.
 
+`.wikiignore` configures repository source exclusions using repository-root-relative patterns, wildcards, and inclusion exceptions. It has no frontmatter or registry entry. See [Repository Source Scope](./repository-scope.md) for initialization, history, and filtering behavior.
+
 ## Schema Versioning
 
 Every project wiki must include `.project-wiki/WIKI_VERSION.yml`.

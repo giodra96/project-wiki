@@ -69,6 +69,7 @@ class ReviewProgressContract:
 
 @dataclass(frozen=True)
 class SemanticPathContract:
+    wiki_ignore_file: str
     wiki_version_file: str
     document_registry_file: str
     source_registry_file: str
@@ -302,6 +303,7 @@ def load_schema_contract(path: Path | None = None) -> SchemaContract:
         "review_progress",
     )
     semantic_path_fields = {
+        "wiki_ignore_file",
         "wiki_version_file",
         "document_registry_file",
         "source_registry_file",
@@ -698,6 +700,7 @@ def parse_scaffold_contract(
     recipes: dict[str, ScaffoldFileRecipe] = {}
     document_ids: set[str] = set()
     special_paths = {
+        "wiki-ignore": semantic_paths.wiki_ignore_file,
         "status": "STATUS.md",
         "wiki-version": semantic_paths.wiki_version_file,
         "document-registry": semantic_paths.document_registry_file,

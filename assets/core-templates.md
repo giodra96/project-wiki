@@ -112,6 +112,7 @@ Preserve existing file content in both files and insert or replace only this mar
 
 When `.project-wiki/INDEX.md` exists:
 
+- For wiki source discovery, reads, searches, and diffs, use the project-wiki `wiki_scope.py` helper, which applies `.project-wiki/.wikiignore` automatically. Existing wiki history remains consultable; an exclusion alone does not indicate missing sources or drift.
 - Before implementing, modifying, debugging, refactoring, testing, documenting, or planning code, read `.project-wiki/INDEX.md` and only the linked context needed for the task.
 - After agent-made source changes, update affected wiki docs, indexes, `REGISTRY.yml`, `STATUS.md`, traceability, and wiki logs before finishing. Record observed behavior in `technical/`; do not infer product requirements from code.
 - Use the project-wiki `update` workflow for notes, requirements, or external documents; `sync` for manual or external code changes; and `maintain` for validation or migration. Follow each workflow's deterministic scripts and never load PDF/DOCX sources directly into model context.

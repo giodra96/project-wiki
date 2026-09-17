@@ -94,6 +94,24 @@ class WikiValidatorTests(unittest.TestCase):
         registry_path.write_text(yaml.safe_dump(source_registry, sort_keys=False), encoding="utf-8")
         return archived, registry_path, source_registry
 
+    def test_excluded_archived_raw_sources_are_not_read_or_flagged_missing(self) -> None:
+        archived, _, _ = self.create_processed_source_fixture()
+        (self.root / ".wikiignore").write_text("/.project-wiki/sources/processed/\n/.project-wiki/intake/**/source.*\n")
+        info = self.root / "intake/documents/DOCIN-20260820-001/source-info.yml"
+        metadata = yaml.safe_load(info.read_text())
+        metadata["copied_source_path"] = "source.md"
+        info.write_text(yaml.safe_dump(metadata))
+        archived.unlink()
+        with patch.object(validate_wiki, "sha256_file", side_effect=AssertionError("excluded raw source read")):
+            report = validate_wiki.validate_wiki(self.root)
+        self.assertFalse({finding.code for finding in report.findings} & {
+            "source-registry-current-path-missing", "processed-source-current-hash-mismatch",
+            "intake-copied-source-missing", "link-target-missing",
+        }, report.findings)
+        from scripts import check_inbox
+        with patch.object(check_inbox, "sha256_file", side_effect=AssertionError("excluded raw source read")):
+            self.assertEqual(check_inbox.check_inbox(self.root).decisions, ())
+
     def add_atomic_requirement(self, chunk_id: str, *, evidence_chunk_id: str | None = None) -> None:
         topic_path = self.root / "requirements" / "functional" / "authentication.md"
         evidence = evidence_chunk_id or chunk_id

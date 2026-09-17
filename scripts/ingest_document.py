@@ -17,6 +17,12 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Iterable
 
 try:
+    from .wiki_scope import WikiScope, WikiScopeError
+except ImportError:
+    from wiki_scope import WikiScope, WikiScopeError
+
+
+try:
     from .schema_contract import SchemaContract, SchemaContractError, load_schema_contract
 except ImportError:
     from schema_contract import SchemaContract, SchemaContractError, load_schema_contract  # type: ignore[no-redef]
@@ -101,7 +107,26 @@ def main() -> int:
         print(f"error: invalid schema contract: {error}", file=sys.stderr)
         return 2
     artifacts = contract.intake_artifacts
-    source = Path(args.source).expanduser().resolve()
+    wiki_root = Path(os.path.abspath(Path(args.wiki_root).expanduser()))
+    source = Path(os.path.abspath(Path(args.source).expanduser()))
+    try:
+        scope = WikiScope(wiki_root, contract)
+        if source.is_relative_to(scope.repository_root) and scope.ignored(source):
+            print("error: document source is excluded by .wikiignore", file=sys.stderr)
+            return 2
+    except (OSError, WikiScopeError) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+    source = source.resolve()
+    wiki_root = wiki_root.resolve()
+    try:
+        resolved_scope = WikiScope(wiki_root, contract)
+        if source.is_relative_to(resolved_scope.repository_root) and resolved_scope.ignored(source):
+            print("error: document source is excluded by .wikiignore", file=sys.stderr)
+            return 2
+    except (OSError, WikiScopeError) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
     if not source.exists() or not source.is_file():
         print(f"error: source file not found: {source}", file=sys.stderr)
         return 2

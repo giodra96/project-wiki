@@ -19,7 +19,9 @@ def create_valid_wiki(root: Path, contract: SchemaContract = TEST_CONTRACT) -> d
     for relative in contract.required_files:
         path = root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
-        if relative == contract.semantic_paths.wiki_version_file:
+        if relative == contract.semantic_paths.wiki_ignore_file:
+            path.write_text("# Repository source exclusions.\n", encoding="utf-8")
+        elif relative == contract.semantic_paths.wiki_version_file:
             path.write_text(
                 "\n".join(
                     [

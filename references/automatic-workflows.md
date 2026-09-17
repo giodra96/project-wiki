@@ -19,7 +19,7 @@ Skip this preflight only when the task is unrelated to the project wiki and unre
 
 Run this automatically after source code changes made by the agent through chat. The user should not need to invoke `sync` for agent-made changes.
 
-1. Identify which source paths changed and which wiki records were consulted before implementation.
+1. Use `wiki_scope.py diff` to inspect included source changes (`--cached` for staged changes), `read` for new files, and `search` for targeted source context. Identify which wiki records were consulted before implementation. If no included source changed, skip source-driven wiki updates.
 2. Document implemented or changed behavior under `technical/`, especially module, API, data, integration, testing, deployment, and security docs. Use overview files such as `architecture.md` and `codebase-map.md` as routing/summaries; create or update focused technical docs under the existing technical folders when an implemented area needs its own documentation.
 3. Update implementation docs when the change affects active plans, work items, or scan notes.
 4. Update traceability maps when source paths now implement, modify, or invalidate requirements, CRs, ADRs, or technical docs.

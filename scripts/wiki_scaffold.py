@@ -222,6 +222,13 @@ def render_recipe(
         return render_section_index(recipe)
     if recipe.recipe == "plain-placeholder":
         return f"# {recipe.title}\n\n{recipe.message}\n"
+    if recipe.recipe == "wiki-ignore":
+        return (
+            "# Project Wiki source exclusions.\n"
+            "# Patterns are relative to the repository root, not this directory.\n"
+            "# Populate before scan; existing wiki history is preserved.\n"
+            "# /vendor/\n# /generated/\n# *.min.js\n"
+        )
     if recipe.recipe == "status":
         return render_status(scaffold_date)
     if recipe.recipe == "wiki-version":

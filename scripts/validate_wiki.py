@@ -17,6 +17,12 @@ from typing import Any
 from urllib.parse import unquote, urlsplit
 
 try:
+    from .wiki_scope import WikiScope, WikiScopeError
+except ImportError:
+    from wiki_scope import WikiScope, WikiScopeError
+
+
+try:
     from .schema_contract import (
         SchemaContract,
         SchemaContractDependencyError,
@@ -180,6 +186,7 @@ class WikiValidator:
     def __init__(self, wiki_root: Path, contract: SchemaContract | None = None) -> None:
         self.wiki_root = wiki_root
         self.contract = contract or load_schema_contract()
+        self.scope = WikiScope(wiki_root, self.contract)
         self.findings: list[Finding] = []
         self.yaml_documents: dict[str, Any] = {}
         self.json_documents: dict[str, Any] = {}
@@ -202,6 +209,12 @@ class WikiValidator:
     def run(self) -> ValidationReport:
         if not self.wiki_root.is_dir():
             self.add("error", "wiki-root-missing", ".", "Project wiki root does not exist or is not a directory.")
+            return self.report()
+
+        try:
+            self.scope.ignored("wiki-scope-probe")
+        except (WikiScopeError, OSError) as error:
+            self.add("error", "wiki-ignore-invalid", self.contract.semantic_paths.wiki_ignore_file, str(error))
             return self.report()
 
         self.check_symlinks()
@@ -245,6 +258,8 @@ class WikiValidator:
     def check_symlinks(self) -> None:
         for path in sorted(self.wiki_root.rglob("*")):
             if not path.is_symlink():
+                continue
+            if self.is_raw_source(path) and self.scope.ignored(path):
                 continue
             relative = self.relative(path)
             self.reported_symlinks.add(relative)
@@ -671,6 +686,8 @@ class WikiValidator:
                     self.add("error", "intake-copied-source-path-invalid", relative, "copied_source_path must be a path or null.")
                 else:
                     candidate = self.intake_document_root(intake_id) / Path(copied_source).name
+                    if self.scope.ignored(candidate):
+                        continue
                     resolved_copy = self.resolve_contained_path(
                         candidate,
                         self.intake_document_root(intake_id),
@@ -1363,6 +1380,8 @@ class WikiValidator:
             if pure.is_absolute() or ".." in pure.parts:
                 self.add("error", "source-path-invalid", relative, f"{location} has unsafe source path '{source_path}'.")
                 continue
+            if self.scope.ignored(source_path):
+                continue
             candidate = repository_root / pure
             if not candidate.exists():
                 self.add("error", "source-path-missing", relative, f"{location} source path does not exist: {source_path}.")
@@ -1457,7 +1476,7 @@ class WikiValidator:
             current_path = entry.get("current_path")
             if isinstance(current_path, str):
                 normalized = self.normalized_relative_path(current_path)
-                if normalized is not None:
+                if normalized is not None and not self.scope.ignored(self.wiki_root / normalized):
                     target = self.wiki_root / normalized
                     resolved_target = self.resolve_contained_path(
                         target,
@@ -1497,7 +1516,7 @@ class WikiValidator:
             self.add("error", "processed-source-current-path-required", relative, f"{location} processed source requires current_path.")
         else:
             normalized = self.normalized_relative_path(current_path)
-            if normalized is not None:
+            if normalized is not None and not self.scope.ignored(self.wiki_root / normalized):
                 target = self.wiki_root / normalized
                 resolved_target = self.resolve_contained_path(
                     target,
@@ -1540,6 +1559,11 @@ class WikiValidator:
         if not path_text:
             target = source
         else:
+            lexical_target = Path(os.path.abspath(source.parent / path_text))
+            if (lexical_target.is_relative_to(self.wiki_root)
+                    and self.is_raw_source(lexical_target)
+                    and self.scope.ignored(lexical_target)):
+                return
             candidate = self.resolve_contained_path(
                 source.parent / path_text,
                 self.wiki_root,

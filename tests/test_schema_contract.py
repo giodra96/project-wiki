@@ -718,6 +718,7 @@ class SchemaContractTests(unittest.TestCase):
             "traceability/requirement-evidence.yml": "traceability/evidence.yml",
         }
         payload["semantic_paths"] = {
+            "wiki_ignore_file": ".wikiignore",
             "wiki_version_file": "SCHEMA.yml",
             "document_registry_file": "CATALOG.yml",
             "source_registry_file": "inputs/SOURCES.yml",

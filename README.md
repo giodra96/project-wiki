@@ -96,6 +96,20 @@ The slash-style form is an invocation hint, not a strict CLI. Natural language w
 Use the project-wiki skill in scan mode. Analyze this repository and create the initial project wiki.
 ```
 
+### Exclude sources before scanning
+
+To limit the first scan, run `init`, populate `.project-wiki/.wikiignore`, then run `scan`. Patterns are relative to the repository root and support directory exclusions, wildcards, and `!` exceptions:
+
+```text
+/vendor/
+/generated/
+*.min.js
+/legacy/*
+!/legacy/README.md
+```
+
+Excluded paths are completely absent from wiki source discovery and tracking. Existing wiki history stays readable without rereading or synchronizing excluded sources; exclusions do not generate missing-source warnings. A direct first `scan` proceeds without exclusions. Existing rules are preserved. See [Repository Source Scope](references/repository-scope.md).
+
 ### 3. Work normally
 
 Once `.project-wiki/INDEX.md` exists, ask the agent for ordinary implementation, debugging, refactoring, testing, documentation, or planning work. The skill should consult the relevant wiki context before acting and update affected wiki records after agent-made source changes.
@@ -220,6 +234,7 @@ The complete structure is always created. Files that are not useful yet can rema
 
 ```text
 .project-wiki/
+|-- .wikiignore           # Repository source exclusions; root-relative patterns
 |-- INDEX.md              # Root routing map (entrypoint for agents & humans)
 |-- PROJECT.md            # Project vision, core constraints, and stack
 |-- STATUS.md             # Current milestone, active work, and blockers
@@ -303,6 +318,7 @@ Agents use `review_progress.py inspect` for a compact outline and review state, 
 
 | Helper | Purpose |
 | --- | --- |
+| `wiki_scope.py` | Discovers, reads, searches, and diffs sources with automatic `.wikiignore` filtering |
 | `wiki_scaffold.py` | Creates and validates the fixed canonical skeleton only when the target wiki is absent; never merges or overwrites |
 | `check_inbox.py` | Hashes inbox documents, detects historical/current duplicates, and returns `process`, `skip`, or `review` |
 | `review_progress.py` | Inspects intake state, checkpoints ledger coverage, renders selected source views, and applies ledger updates atomically |

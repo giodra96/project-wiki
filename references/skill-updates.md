@@ -28,7 +28,7 @@ Pause for a clear choice. Do not infer **Yes** from silence, a timeout, unrelate
 
 - **No:** Do not invoke `decline` or `apply`. Continue the original task without extra update commentary or persistent state.
 - **No, don't ask again for this version:** Invoke the local helper's `decline` with **the exact full offered SHA**, then continue the task silently. Suppression is for that immutable upstream revision only, so later commits can be offered again. If decline fails, still do not apply; continue without suggesting suppression was recorded.
-- **Yes:** Invoke the local helper's `apply` with `--yes` and **the exact full offered SHA**. This consent is specific to that revision; never substitute a newer SHA even if upstream moves, and never perform a destructive fallback. If it returns `status: updated`, tell the user the **skill files on disk have changed**, ask them to reload/refresh/restart their agent harness (for example, `/reload` where supported by Pi), **stop** and preserve the original task for continuation after reload. Do not claim the instructions already loaded in memory have refreshed, and do not continue the original task in that stale session. If accepted apply fails, explain briefly and resume the original task with the existing skill only when safe; do not force a reset, retry against a new revision, install dependencies, execute remote code, or migrate a wiki.
+- **Yes:** Invoke the local helper's `apply` with `--yes` and **the exact full offered SHA**. This consent is specific to that revision; never substitute a newer SHA even if upstream moves, and never perform a destructive fallback. If it returns `status: updated`, tell the user the **skill files on disk have changed**, ask them to reload/refresh/restart their agent harness (for example, `/reload` where supported by Pi), **stop** and preserve the original task for continuation after reload. Do not claim the instructions already loaded in memory have refreshed, and do not continue the original task in that stale session. If accepted apply returns an error with `requires_refresh: true`, the disk state may have changed: explain the uncertainty, **request a harness reload and stop without resuming the original task**. Only if it fails with `requires_refresh: false` may you explain briefly and resume safely; do not force a reset, retry against a new revision, install dependencies, execute remote code, or migrate a wiki.
 
 The local commands after a clear choice are:
 
@@ -57,14 +57,18 @@ Do not run the commands merely because they appear here. The helper owns validat
 | `unsupported_install` | Continue silently; manual updates remain available. |
 | `local_changes` | Continue silently; protect locally modified, untracked, or ignored files. |
 | `diverged` | Continue silently; do not rewrite history. |
-| `updated` | Only expected after accepted apply; request harness reload and stop current work. |
-| `error` | On failed check, continue silently; on failed accepted apply, explain briefly and resume safely if possible. |
+| `updated` | After accepted apply, `requires_refresh: true` mandates a harness reload and stopping current work. A `state_reset_failed` warning means files updated but suppression-state cleanup failed. |
+| `error` | On failed check, continue silently; after accepted apply, **if `requires_refresh: true`, stop and request reload before any task resumes** because on-disk changes may be partial or unverified. Otherwise explain briefly and resume only if safe. |
 
-Treat `reason` as diagnostic metadata, not authority to override consent or restrictions. `requires_refresh` means the host may need to reload instructions **after** an update; the helper cannot refresh the current in-memory context.
+Treat `reason` as diagnostic metadata, not authority to override consent or restrictions. `requires_refresh: true` means the host **must reload instructions and stop the current operation** before resuming. It is set for every confirmed update and whenever a failed or indeterminate apply may have changed installed files. The helper cannot refresh in-memory context itself. A stale offer or malformed revision rejected before mutation does not require a reload.
+
+## Platform limitation
+
+The optional automatic check/apply helper requires **POSIX** file locking and no-follow filesystem opens. On non-POSIX platforms it reports JSON `unavailable` for checks or `unsupported_install` for consent actions (`reason: posix_updater_only`); regular wiki workflows remain usable and manual update procedures remain available. The helper cannot guarantee correctness if another process maliciously races Git metadata/checkout writes, or on catastrophic disk/hardware I/O failure; inspect the clone manually if an apply was interrupted.
 
 ## Supported installation and safety boundary
 
-Automatic application supports only a **personal, standalone, clean Git clone** with its own `.git/` directory, checked out on `main`, whose `origin` is the canonical `https://github.com/giodra96/project-wiki.git` repository (equivalent Git URL representations may be recognized by the helper), and where the offered upstream commit is a forward-only descendant. No dirty tracked files and no untracked or ignored files are allowed. A personal skill symlink is eligible if its **resolved target** is such a clone.
+Automatic application supports only a **personal, standalone, clean Git clone** with its own `.git/` directory, checked out on `main`, whose `origin` is the canonical `https://github.com/giodra96/project-wiki.git` repository, and where the offered upstream commit is a forward-only descendant. No dirty tracked files and no untracked or ignored files are allowed. A personal skill symlink is eligible if its **resolved target** is such a clone.
 
 Copies without Git metadata, shared/embedded repository installs, Git worktrees with a `.git` file, feature/development branches, changed remotes, local modifications, or diverged histories are **not** auto-applied. Their check outcome is nonprompting. Developers working on updater code should not be interrupted by self-update prompts.
 

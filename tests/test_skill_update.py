@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 from contextlib import redirect_stdout
-import fcntl
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
 import importlib.util
 import io
 import json
@@ -10,6 +13,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -31,6 +35,7 @@ def git(directory: Path, *arguments: str) -> str:
     return result.stdout.strip()
 
 
+@unittest.skipUnless(os.name == "posix" and fcntl is not None, "POSIX-only updater tests")
 class SkillUpdateTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -141,6 +146,7 @@ class SkillUpdateTests(unittest.TestCase):
         code, applied = self.invoke("apply", ahead, True)
         self.assertEqual((code, applied["status"]), (0, "updated"))
         self.assertEqual(applied["installed_revision"], ahead)
+        self.assertTrue(applied["requires_refresh"])
         self.assertEqual((self.install / "README.md").read_text(), "next version\n")
         self.assertEqual(git(self.install, "remote", "get-url", "origin"),
                          update.UPSTREAM_URL)
@@ -153,7 +159,7 @@ class SkillUpdateTests(unittest.TestCase):
             code, result = self.invoke(action, old, yes)
             self.assertNotEqual(code, 0)
             self.assertEqual(result["reason"], "offered_revision_changed")
-            self.assertTrue(result["requires_refresh"])
+            self.assertFalse(result["requires_refresh"])
             self.assertEqual(result["upstream_revision"], newer)
         self.assertEqual(git(self.install, "rev-parse", "HEAD"), self.first)
         self.assertFalse(list(self.state_dir.glob("*.json")))
@@ -259,7 +265,8 @@ class SkillUpdateTests(unittest.TestCase):
 
     def test_corrupt_state_never_offers_updates(self):
         self.commit_upstream()
-        self.state_dir.mkdir(exist_ok=True)
+        self.state_dir.mkdir(mode=0o700, exist_ok=True)
+        self.state_dir.chmod(0o700)
         state = update._state_file(self.install.resolve(), self.state_dir)
         for broken in ('not-json', '{"protocol_version":1}', '{"protocol_version":99,"suppressed_revision":null}'):
             state.write_text(broken)
@@ -311,9 +318,11 @@ class SkillUpdateTests(unittest.TestCase):
         self.assertFalse(indicator.exists())
 
     def test_lock_contention_fails_open(self):
-        self.state_dir.mkdir(exist_ok=True)
+        self.state_dir.mkdir(mode=0o700, exist_ok=True)
+        self.state_dir.chmod(0o700)
         lockfile = update._state_file(self.install.resolve(), self.state_dir).with_suffix(".lock")
         with lockfile.open("w") as file:
+            lockfile.chmod(0o600)
             fcntl.flock(file, fcntl.LOCK_EX | fcntl.LOCK_NB)
             code, result = self.invoke()
             self.assertEqual((code, result["status"], result["reason"]),
@@ -377,6 +386,161 @@ class SkillUpdateTests(unittest.TestCase):
         self.assertNotEqual(code, 0)
         self.assertEqual(json.loads(output.getvalue())["reason"], "invalid_arguments")
 
+    def test_nested_git_metadata_symlinks_rejected_without_external_writes(self):
+        ahead = self.commit_upstream()
+        for i, relative in enumerate(("refs/heads", "logs/refs", "objects/pack")):
+            with self.subTest(relative=relative):
+                location = self.install / ".git" / relative
+                saved = self.base / ("saved-" + str(i))
+                outside = self.base / ("outside-" + str(i))
+                outside.mkdir()
+                (outside / "marker").write_text("unchanged")
+                if location.exists():
+                    location.rename(saved)
+                location.parent.mkdir(parents=True, exist_ok=True)
+                location.symlink_to(outside, target_is_directory=True)
+                try:
+                    code, outcome = self.invoke("apply", ahead, True)
+                    self.assertEqual((code, outcome["status"], outcome["reason"]),
+                                     (1, "unsupported_install", "unsafe_git_metadata"))
+                    self.assertEqual(sorted(p.name for p in outside.iterdir()), ["marker"])
+                    self.assertEqual((outside / "marker").read_text(), "unchanged")
+                finally:
+                    location.unlink()
+                    if saved.exists():
+                        saved.rename(location)
+        self.assertEqual(git(self.install, "rev-parse", "HEAD"), self.first)
+
+    def test_git_commondir_and_special_files_rejected(self):
+        directory = self.install / ".git"
+        outside = self.base / "foreign-git"
+        outside.mkdir()
+        (outside / "marker").write_text("unchanged")
+        (directory / "commondir").write_text(str(outside) + "\n")
+        try:
+            self.assertEqual(self.invoke()[1]["reason"], "unsafe_git_metadata")
+            self.assertEqual((outside / "marker").read_text(), "unchanged")
+        finally:
+            (directory / "commondir").unlink()
+        fifo = directory / "refs" / "heads" / "extra-fifo"
+        os.mkfifo(fifo)
+        try:
+            self.assertEqual(self.invoke()[1]["reason"], "unsafe_git_metadata")
+        finally:
+            fifo.unlink()
+
+    def test_legacy_and_quoted_git_config_sections_rejected(self):
+        config = self.install / ".git" / "config"
+        original = config.read_text()
+        for header in ('[filter.evil]', '[filter "evil"]', '[url.https://bad/]',
+                       '[submodule.demo]', '[includeIf.gitdir:/tmp/anything]'):
+            with self.subTest(header=header):
+                config.write_text(original + "\n" + header + "\n  foo = bar\n")
+                self.assertEqual(self.invoke()[1]["reason"], "unsafe_git_config")
+        config.write_text(original)
+
+    def test_state_directory_must_be_private_and_not_symlinked(self):
+        self.state_dir.mkdir(mode=0o700)
+        self.state_dir.chmod(0o777)
+        code, result = self.invoke()
+        self.assertEqual((code, result["status"], result["reason"]),
+                         (0, "unavailable", "state_unavailable"))
+        self.assertFalse(list(self.state_dir.iterdir()))
+        self.state_dir.rmdir()
+        outside = self.base / "external-state"
+        outside.mkdir(mode=0o700)
+        self.state_dir.symlink_to(outside, target_is_directory=True)
+        self.assertEqual(self.invoke()[1]["reason"], "state_unavailable")
+        self.assertFalse(list(outside.iterdir()))
+
+    def test_fifo_state_and_lock_do_not_hang(self):
+        self.state_dir.mkdir(mode=0o700)
+        state = update._state_file(self.install.resolve(), self.state_dir)
+        os.mkfifo(state)
+        try:
+            code, result = self.invoke()
+            self.assertEqual((code, result["status"], result["reason"]),
+                             (0, "error", "state_corrupt"))
+        finally:
+            state.unlink()
+        lock = state.with_suffix(".lock")
+        lock.unlink()
+        os.mkfifo(lock)
+        try:
+            code, result = self.invoke()
+            self.assertEqual((code, result["status"], result["reason"]),
+                             (0, "unavailable", "state_unavailable"))
+        finally:
+            lock.unlink()
+
+    def test_state_reset_failure_after_merge_still_requires_refresh(self):
+        ahead = self.commit_upstream()
+        with mock.patch.object(update, "_write_state", side_effect=OSError("disk full")):
+            code, outcome = self.invoke("apply", ahead, True)
+        self.assertEqual((code, outcome["status"], outcome["reason"]),
+                         (0, "updated", "state_reset_failed"))
+        self.assertTrue(outcome["requires_refresh"])
+        self.assertEqual(outcome["installed_revision"], ahead)
+        self.assertEqual(git(self.install, "rev-parse", "HEAD"), ahead)
+
+    def test_post_merge_verification_failure_requires_refresh(self):
+        ahead = self.commit_upstream()
+        original = update._text
+
+        def fail_after_merge(directory, *args, **kwargs):
+            if directory == self.install and args == ("rev-parse", "HEAD"):
+                raise update.GitFailure("verification_failed")
+            return original(directory, *args, **kwargs)
+
+        with mock.patch.object(update, "_text", side_effect=fail_after_merge):
+            code, outcome = self.invoke("apply", ahead, True)
+        self.assertEqual((code, outcome["status"], outcome["reason"]),
+                         (1, "error", "fast_forward_failed"))
+        self.assertTrue(outcome["requires_refresh"])
+        self.assertEqual(git(self.install, "rev-parse", "HEAD"), ahead)
+
+    def test_unexpected_io_failure_after_merge_requires_refresh(self):
+        ahead = self.commit_upstream()
+        original = update._text
+
+        def fail_after_merge(directory, *args, **kwargs):
+            if directory == self.install and args == ("rev-parse", "HEAD"):
+                raise OSError("unreadable-after-merge")
+            return original(directory, *args, **kwargs)
+
+        with mock.patch.object(update, "_text", side_effect=fail_after_merge):
+            code, outcome = self.invoke("apply", ahead, True)
+        self.assertEqual((code, outcome["status"], outcome["reason"]),
+                         (1, "error", "operation_failed"))
+        self.assertTrue(outcome["requires_refresh"])
+        self.assertEqual(git(self.install, "rev-parse", "HEAD"), ahead)
+
+    def test_state_and_lock_symlinks_rejected(self):
+        self.state_dir.mkdir(mode=0o700)
+        outside = self.base / "outside-state"
+        outside.write_text("outside-data")
+        state = update._state_file(self.install.resolve(), self.state_dir)
+        state.symlink_to(outside)
+        try:
+            self.assertEqual(self.invoke()[1]["reason"], "state_corrupt")
+        finally:
+            state.unlink()
+        lock = state.with_suffix(".lock")
+        lock.unlink()  # Created during the preceding state-file test.
+        lock.symlink_to(outside)
+        try:
+            self.assertEqual(self.invoke()[1]["reason"], "state_unavailable")
+        finally:
+            lock.unlink()
+        self.assertEqual(outside.read_text(), "outside-data")
+
+    def test_platform_without_fcntl_gracefully_returns_json(self):
+        with mock.patch.object(update, "fcntl", None):
+            self.assertEqual(self.invoke()[1]["reason"], "posix_updater_only")
+            code, outcome = self.invoke("apply", "0" * 40, True)
+            self.assertEqual((code, outcome["status"], outcome["reason"]),
+                             (1, "unsupported_install", "posix_updater_only"))
+
     def test_xdg_state_location(self):
         with mock.patch.dict(os.environ, {"XDG_STATE_HOME": str(self.base / "xdg")}):
             self.assertEqual(
@@ -397,6 +561,49 @@ class SkillUpdateTests(unittest.TestCase):
             self.assertEqual(env["GIT_TERMINAL_PROMPT"], "0")
             self.assertEqual(env["GIT_CONFIG_GLOBAL"], os.devnull)
             self.assertEqual(self.invoke()[1]["status"], "up_to_date")
+
+
+class SkillUpdateCliTests(unittest.TestCase):
+    """Exercise the script executable, parser and JSON exit status offline."""
+
+    def cli(self, *args):
+        completed = subprocess.run(
+            [sys.executable, str(MODULE), *args], text=True, capture_output=True,
+            timeout=8, env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+        )
+        self.assertEqual(completed.stderr, "")
+        result = json.loads(completed.stdout)
+        self.assertEqual(result["protocol_version"], 1)
+        self.assertEqual(set(result), {
+            "protocol_version", "status", "installed_revision", "upstream_revision",
+            "can_apply", "requires_refresh", "reason",
+        })
+        return completed.returncode, result
+
+    def test_malformed_cli_arguments(self):
+        for args in ((), ("check",), ("unknown", "--skill-root", "/no-repo"),
+                     ("check", "--skill-root", "/no-repo", "--bad"),
+                     ("check", "--skill-root", "/no-repo", "--format", "text")):
+            with self.subTest(args=args):
+                code, result = self.cli(*args)
+                self.assertEqual((code, result["status"], result["reason"]),
+                                 (1, "error", "invalid_arguments"))
+
+    @unittest.skipUnless(os.name == "posix", "POSIX-only action semantics")
+    def test_missing_root_revision_and_consent(self):
+        missing = "/definitely-not-an-installed-project-wiki"
+        cases = (
+            (("check", "--skill-root", missing), 0, "unsupported_install", "skill_root_not_found"),
+            (("decline", "--skill-root", missing), 1, "error", "revision_required"),
+            (("apply", "--skill-root", missing, "--yes"), 1, "error", "revision_required"),
+            (("apply", "--skill-root", missing, "--revision", "0" * 40),
+             1, "error", "explicit_consent_required"),
+        )
+        for args, exit_code, status, reason in cases:
+            with self.subTest(args=args):
+                code, result = self.cli(*args)
+                self.assertEqual((code, result["status"], result["reason"]),
+                                 (exit_code, status, reason))
 
 
 if __name__ == "__main__":

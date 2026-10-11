@@ -10,6 +10,10 @@ Maintain an agent-readable knowledge base in `.project-wiki/`. Load only the wor
 
 Current project wiki schema version: `1.6.1` (canonical value: `./schema/project-wiki.yml`).
 
+## First: Skill Update Consent
+
+On each **fresh skill load**, before routing the requested task, read [Skill Update Consent](./references/skill-updates.md) and perform its one-time local update check when shell/network access is permitted. Do not recheck for every tool call or recursively during the same operation. An available update requires the user's explicit choice; never install one without consent. Skip the preflight when inspecting/implementing the updater itself or when permissions prohibit it, as detailed in the reference.
+
 ## Route The Task
 
 Select one primary mode for an explicit wiki request and load only its workflow:

@@ -69,12 +69,22 @@ You can install Project Wiki either **globally** on your machine (for your perso
 | **Personal (Global)** | Active for all your local projects | `~/.agents/skills/project-wiki/`<br>`~/.claude/skills/project-wiki/` |
 | **Repository (Shared)** | Committed to Git; available to everyone on the team | `.agents/skills/project-wiki/`<br>`.github/skills/project-wiki/` |
 
-For example, to install it personally for Agent Skills compatible tools:
+For example, the **recommended personal installation** for Agent Skills compatible tools is a standalone Git clone:
 
 ```bash
 mkdir -p ~/.agents/skills
-cp -R /path/to/project-wiki ~/.agents/skills/project-wiki
+git clone https://github.com/giodra96/project-wiki.git ~/.agents/skills/project-wiki
 ```
+
+A host-specific skill directory (such as `~/.claude/skills/project-wiki`) can point via symlink to this same clone. A copied skill (`cp -R`) or repository-shared installation is still supported for wiki operations, but does **not** qualify for automatic skill updates. Review and update those files manually through your own copy or repository workflow.
+
+#### Optional skill update check
+
+On each fresh load, if the host permits local shell and network access, the skill checks whether the canonical [`giodra96/project-wiki` `main`](https://github.com/giodra96/project-wiki) has a newer commit. It **never installs without asking**: you can choose **Yes**, **No**, or **No, don't ask again for this version**. A regular No proceeds without storing a refusal; the third option suppresses only the offered commit SHA. If there is no response or the session is noninteractive, no update is applied. After a successful update, reload or restart your agent before continuing so it reads the new instructions.
+
+Automatic applying is deliberately limited to a clean personal standalone clone on `main` with canonical `origin` and forward-only history (including symlinks to such a checkout); there must be no modified, untracked, or ignored files. Copies, repository-embedded/shared installs, Git worktrees, development branches, locally changed checkouts, and diverged histories are not auto-updated. They continue working and can be updated manually: review upstream commits, then merge through the owning repository's normal Git/PR process or back up and replace a copied installation from a reviewed upstream revision. For a clean personal clone, a manual alternative is `git fetch origin main` followed by a reviewed `git merge --ff-only origin/main`.
+
+Skill updates change the **skill's Git revision**, not your project's `.project-wiki/` content or the wiki schema version; they do not run remote scripts, install dependencies, or migrate wiki data. See [Skill Update Consent](references/skill-updates.md) for eligibility, commands, and all status behaviors.
 
 ### 2. Create the first wiki
 
@@ -187,7 +197,7 @@ Project Wiki is built around three distinct architectural layers:
 
 - `SKILL.md` is the runtime entrypoint and links directly to the focused workflow for each mode or automatic trigger.
 - `schema/project-wiki.yml` is the machine-readable contract.
-- `references/` owns focused workflow, structure, and ingestion guidance. Shared finalization, open-question reconciliation, and audit logging live together in `references/common-policies.md`; instruction bootstrap lives in the initialization workflow. Document intake has one operational procedure, with extraction internals at the end of the same reference.
+- `references/` owns focused workflow, structure, skill-update consent, and ingestion guidance. Shared finalization, open-question reconciliation, and audit logging live together in `references/common-policies.md`; instruction bootstrap lives in the initialization workflow. Document intake has one operational procedure, with extraction internals at the end of the same reference.
 - `assets/document-templates.md` routes to focused, copyable template catalogs.
 - `scripts/` provides exclusive new-wiki scaffolding, inbox deduplication, document extraction, structural validation, and contract drift checks.
 
@@ -324,6 +334,7 @@ Agents use `review_progress.py inspect` for a compact outline and review state, 
 | `review_progress.py` | Inspects intake state, checkpoints ledger coverage, renders selected source views, and applies ledger updates atomically |
 | `validate_wiki.py` | Validates tree, YAML/JSON, frontmatter, IDs, registries, paths, links, anchors, and intake artifacts |
 | `check_contracts.py` | Prevents drift among the manifest, README, workflows, templates, and CI-bound documentation |
+| `skill_update.py` | Checks canonical Git revisions and manages revision-scoped refusal or user-consented safe skill updates for supported personal installs |
 
 `maintain` runs structural validation before agent-assisted semantic lint. Deterministic tools establish facts; the agent handles meaning-dependent questions such as contradictions, implicit requirements, stale claims, and traceability quality.
 
@@ -336,6 +347,7 @@ The README is an orientation guide. The manifest is canonical for machine-readab
 | Machine schema version, tree, frontmatter fields, statuses, and ID patterns | [schema/project-wiki.yml](schema/project-wiki.yml) |
 | Human structure, registry, linking, and lifecycle policy | [references/wiki-structure.md](references/wiki-structure.md) |
 | Runtime routing by mode or automatic trigger | [SKILL.md](SKILL.md) |
+| Optional skill update consent, eligibility, and refusal semantics | [references/skill-updates.md](references/skill-updates.md) |
 | Automatic context, initialization, update/intake, sync, and maintenance procedures | [references/automatic-workflows.md](references/automatic-workflows.md), [references/initialization-workflows.md](references/initialization-workflows.md), [references/update-workflows.md](references/update-workflows.md), [references/synchronization-workflow.md](references/synchronization-workflow.md), [references/maintenance-workflows.md](references/maintenance-workflows.md) |
 | Shared finalization, open questions, audit logging | [common-policies.md](references/common-policies.md) |
 | Atomic requirement locations and evidence | [Requirements Topic Scaling](assets/requirements-change-templates.md#requirements-topic-scaling) |

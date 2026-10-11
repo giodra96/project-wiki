@@ -68,7 +68,7 @@ The optional automatic check/apply helper requires **POSIX** file locking and no
 
 ## Supported installation and safety boundary
 
-Automatic application supports only a **personal, standalone, clean Git clone** with its own `.git/` directory, checked out on `main`, whose `origin` is the canonical `https://github.com/giodra96/project-wiki.git` repository, and where the offered upstream commit is a forward-only descendant. No dirty tracked files and no untracked or ignored files are allowed. A personal skill symlink is eligible if its **resolved target** is such a clone.
+Automatic application supports only a **personal, standalone, clean Git clone** with its own `.git/` directory, checked out on `main`, whose `origin` is the canonical `https://github.com/giodra96/project-wiki.git` repository, and where the offered upstream commit is a forward-only descendant. No dirty tracked files or untracked files are allowed. Ignored files are rejected except regular, nonsymlink `.pyc` files directly inside real, nonsymlink `__pycache__` directories with nonsymlink ancestors. These ordinary interpreter caches are preserved. Both installed and upstream tracked trees must be free of `__pycache__` components and `.pyc` paths, preventing checkout from overwriting permitted caches. A personal skill symlink is eligible if its **resolved target** is such a clone.
 
 Copies without Git metadata, shared/embedded repository installs, Git worktrees with a `.git` file, feature/development branches, changed remotes, local modifications, or diverged histories are **not** auto-applied. Their check outcome is nonprompting. Developers working on updater code should not be interrupted by self-update prompts.
 

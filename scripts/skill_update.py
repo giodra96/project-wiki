@@ -172,9 +172,50 @@ def _safe_tree(directory: Path, commit: str) -> None:
             raise UpdateProblem("unsupported_install", "unsafe_tree")
         parts = Path(path).parts
         if (mode in {"120000", "160000"} or kind not in {"blob", "tree"}
-                or any(p.casefold() in {".gitattributes", ".git"} for p in parts)
+                or any(p.casefold() in {".gitattributes", ".git", "__pycache__"} for p in parts)
+                or path.casefold().endswith(".pyc")
                 or any(p in {".", ".."} for p in parts)):
             raise UpdateProblem("unsupported_install", "unsafe_tree")
+
+
+def _safe_ignored_caches(root: Path) -> None:
+    # Normal Python imports generate ignored bytecode. Never delete these files;
+    # _safe_tree keeps both checkout revisions from writing into their paths.
+    # Git omits special files such as FIFOs from ls-files/status. Inspect entry
+    # types without following links, so those cannot hide inside ignored caches.
+    try:
+        stack = [root]
+        while stack:
+            folder = stack.pop()
+            with os.scandir(folder) as entries:
+                for entry in entries:
+                    if folder == root and entry.name == ".git":
+                        continue
+                    mode = entry.stat(follow_symlinks=False).st_mode
+                    if stat.S_ISDIR(mode):
+                        stack.append(Path(entry.path))
+                    elif not stat.S_ISREG(mode):
+                        raise OSError("unsafe working-tree entry")
+    except OSError:
+        raise UpdateProblem("local_changes", "working_tree_not_clean")
+    ignored = _git(root, "ls-files", "--others", "--ignored", "--exclude-standard", "-z")
+    for relative in ignored.stdout.split("\0"):
+        if not relative:
+            continue
+        path = Path(relative)
+        if (path.is_absolute() or ".." in path.parts
+                or path.parent.name != "__pycache__" or path.suffix != ".pyc"):
+            raise UpdateProblem("local_changes", "working_tree_not_clean")
+        try:
+            current = root
+            for component in path.parts[:-1]:
+                current = current / component
+                if not stat.S_ISDIR(current.lstat().st_mode):
+                    raise OSError("unsafe cache ancestor")
+            if not stat.S_ISREG((root / path).lstat().st_mode):
+                raise OSError("unsafe cache file")
+        except OSError:
+            raise UpdateProblem("local_changes", "working_tree_not_clean")
 
 
 def _prepare_install(root: Path) -> str:
@@ -198,10 +239,9 @@ def _prepare_install(root: Path) -> str:
         if not SHA.fullmatch(head):
             raise UpdateProblem("unsupported_install", "invalid_head")
         _safe_tree(root, head)
-        # Includes ignored files: checkout must not overwrite or silently skip them.
-        if _text(root, "status", "--porcelain=v1", "--untracked-files=all",
-                 "--ignored=matching"):
+        if _text(root, "status", "--porcelain=v1", "--untracked-files=all"):
             raise UpdateProblem("local_changes", "working_tree_not_clean")
+        _safe_ignored_caches(root)
         return head
     except GitFailure:
         raise UpdateProblem("unsupported_install", "invalid_git_repository")

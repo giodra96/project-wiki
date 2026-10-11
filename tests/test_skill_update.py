@@ -48,7 +48,11 @@ class SkillUpdateTests(unittest.TestCase):
         git(self.source, "config", "user.name", "Updater Tests")
         git(self.source, "config", "user.email", "update@example.invalid")
         (self.source / "README.md").write_text("version 1\n")
-        git(self.source, "add", "README.md")
+        (self.source / ".gitignore").write_text("__pycache__/\n*.pyc\n")
+        for folder in ("scripts", "tests"):
+            (self.source / folder).mkdir()
+            (self.source / folder / "example.py").write_text("VALUE = 1\n")
+        git(self.source, "add", "--all")
         git(self.source, "commit", "-qm", "initial")
         self.first = git(self.source, "rev-parse", "HEAD")
         git(self.base, "clone", "-q", str(self.source), str(self.install))
@@ -192,6 +196,82 @@ class SkillUpdateTests(unittest.TestCase):
             f.write("\nignored.dat\n")
         (self.install / "ignored.dat").write_text("ignored")
         self.assertEqual(self.invoke()[1]["status"], "local_changes")
+
+    def test_normal_import_caches_permit_update_and_are_preserved(self):
+        caches = {}
+        for folder in ("scripts", "tests"):
+            module_spec = importlib.util.spec_from_file_location(
+                "fixture_" + folder, self.install / folder / "example.py")
+            module_spec.loader.exec_module(importlib.util.module_from_spec(module_spec))
+            cache = next((self.install / folder / "__pycache__").glob("*.pyc"))
+            caches[cache] = cache.read_bytes()
+        ahead = self.commit_upstream()
+        self.assertEqual(self.invoke()[1]["status"], "update_available")
+        self.assertEqual(self.invoke("apply", ahead, True)[1]["status"], "updated")
+        for cache, content in caches.items():
+            self.assertEqual(cache.read_bytes(), content)
+
+    def test_only_regular_ignored_bytecode_in_real_cache_directories_is_allowed(self):
+        self.commit_upstream()
+        cache = self.install / "scripts" / "__pycache__"
+        cache.mkdir()
+        for relative in ("stray.pyc", "scripts/__pycache__/notes.txt",
+                         "scripts/__pycache__/old.pyo"):
+            with self.subTest(relative=relative):
+                path = self.install / relative
+                path.write_text("custom data")
+                self.assertEqual(self.invoke()[1]["status"], "local_changes")
+                path.unlink()
+        outside = self.base / "outside-cache"
+        outside.write_text("preserve")
+        link = cache / "linked.pyc"
+        link.symlink_to(outside)
+        self.assertEqual(self.invoke()[1]["status"], "local_changes")
+        link.unlink()
+        fifo = cache / "fifo.pyc"
+        os.mkfifo(fifo)
+        self.assertEqual(self.invoke()[1]["status"], "local_changes")
+        fifo.unlink()
+        cache.rmdir()
+        external_directory = self.base / "external-cache"
+        external_directory.mkdir()
+        (external_directory / "example.pyc").write_text("preserve")
+        cache.symlink_to(external_directory, target_is_directory=True)
+        self.assertEqual(self.invoke()[1]["status"], "local_changes")
+        self.assertEqual((external_directory / "example.pyc").read_text(), "preserve")
+
+    def test_upstream_tracked_bytecode_paths_are_rejected(self):
+        for relative in ("scripts/__pycache__/example.pyc", "example.pyc",
+                         "scripts/__PYCACHE__/notes.txt", "EXAMPLE.PYC"):
+            with self.subTest(relative=relative):
+                path = self.source / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("not trusted")
+                git(self.source, "add", "-f", relative)
+                git(self.source, "commit", "-qm", "unsafe cache path")
+                self.assertEqual(self.invoke()[1]["reason"], "unsafe_tree")
+                self.assertEqual(git(self.install, "rev-parse", "HEAD"), self.first)
+                git(self.source, "reset", "--hard", self.first)
+
+    def test_ignored_custom_file_appearing_during_fetch_prevents_merge(self):
+        ahead = self.commit_upstream()
+        actual = update._git
+
+        def create_custom_cache(directory, *args, **kwargs):
+            result = actual(directory, *args, **kwargs)
+            if directory == self.install and args and args[0] == "fetch":
+                cache = self.install / "scripts" / "__pycache__"
+                cache.mkdir()
+                (cache / "custom.txt").write_text("preserve")
+            return result
+
+        with mock.patch.object(update, "_git", side_effect=create_custom_cache):
+            code, result = self.invoke("apply", ahead, True)
+        self.assertNotEqual(code, 0)
+        self.assertEqual(result["reason"], "install_changed_working_tree_not_clean")
+        self.assertEqual(git(self.install, "rev-parse", "HEAD"), self.first)
+        self.assertEqual((self.install / "scripts/__pycache__/custom.txt").read_text(),
+                         "preserve")
 
     def test_reject_non_clone_copy_and_parent_repository(self):
         plain = self.base / "plain"

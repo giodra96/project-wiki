@@ -44,6 +44,7 @@ Verify the CLI smoke tests:
 
 ```bash
 python3 scripts/check_contracts.py --help
+python3 scripts/skill_update.py --help
 python3 scripts/check_inbox.py --help
 python3 scripts/ingest_document.py --help
 python3 scripts/validate_wiki.py --help
@@ -66,7 +67,13 @@ The suite covers:
 - Canonical wiki tree, YAML/frontmatter, IDs, statuses, registries, paths, links, anchors, and validator JSON output.
 - Manifest loading and drift detection across schema versions, README/workflow paths, canonical tree, and templates.
 
-GitHub Actions runs the same suite, Python compilation, and CLI smoke checks on Python 3.10 and 3.13 for every push and pull request.
+GitHub Actions runs the same suite, Python compilation, and CLI smoke checks on Python 3.10 and 3.13 for every push and pull request. The stdlib-only `skill_update.py` CLI also receives compile/help smoke coverage; update-consent scenarios require dedicated regression tests in the helper implementation.
+
+### Skill Update Consent Changes
+
+The update consent policy is in [references/skill-updates.md](references/skill-updates.md) and is routed once per fresh load from `SKILL.md`. Skill revisions are canonical `main` Git commit SHAs, not wiki schema versions. Keep the CLI contract aligned with `scripts/skill_update.py`: `check|decline|apply --skill-root ROOT --format json`, with the offered full 40-hex `--revision` required for `decline`/`apply` and explicit `--yes` required for `apply`.
+
+When changing updater behavior, preserve the three-way prompt (Yes / No / No, don't ask again for this version), noninteractive non-application, revision-scoped suppression, immutable pinned apply, safe-install restrictions, and post-update harness reload. Document unsupported copied, embedded, worktree, or feature-branch installations as manual-only, not automatically mutable. Development/testing of the updater itself must skip the automatic preflight, without bypassing consent for an actual requested update. Do not conflate skill updates with wiki schema migration, or introduce remote script execution or dependency installs. Add focused tests to the helper's test suite for any changed CLI/safety behavior.
 
 ### Schema Contract Changes
 
@@ -151,6 +158,7 @@ Before submitting a Pull Request, verify the following:
 - [ ] `argument-hint` lists only user-facing modes (`init | scan | update | sync | maintain`).
 - [ ] `SKILL.md` contains direct routing and cross-cutting invariants; detailed procedural logic is placed in `references/` without imposing a fixed size limit.
 - [ ] Direct runtime routes in `SKILL.md`, focused workflow references, and `README.md` stay aligned.
+- [ ] Fresh-load update preflight and explicit three-choice consent agree with `references/skill-updates.md`; unsupported installs and development checkouts remain untouched.
 - [ ] Templates and human references match `schema/project-wiki.yml`.
 - [ ] `schema/project-wiki.yml` remains the single machine-readable schema contract and the drift check passes:
   ```bash
@@ -160,6 +168,7 @@ Before submitting a Pull Request, verify the following:
 - [ ] Python helper smoke checks pass:
   ```bash
   python3 scripts/check_contracts.py --help
+  python3 scripts/skill_update.py --help
   python3 scripts/check_inbox.py --help
   python3 scripts/ingest_document.py --help
   python3 scripts/review_progress.py --help

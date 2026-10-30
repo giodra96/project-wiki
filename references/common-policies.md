@@ -12,7 +12,7 @@ Keep CRs lightweight: what changed, why, and what it affects. Create or update a
 
 ## Post-Update Checklist
 
-- Preserve required frontmatter and stable, unique IDs. Register new records and update affected registry entries, root/section indexes, `STATUS.md`, and meaningful backlinks.
+- Preserve required frontmatter and stable, unique IDs. Register new records and update registry entries only when catalogued fields change; keep the registry's `updated` date at least as recent as catalogued documents. Update root/section indexes only when routing changes, `STATUS.md` when project state changes or the selected workflow requires audit results, and backlinks when relationships change. Leave unaffected files and dates untouched.
 - Keep requirements sourced to explicit product intent; put observed implementation, technical concerns, and code-inferred candidates in `technical/`. Represent uncertain product intent as open questions.
 - Keep requirements indexes routing-only; route to every topic and use final atomic anchors in `REGISTRY.yml`. See [Requirement Authoring](../assets/requirements-change-templates.md#requirements-topic-scaling) when creating or relocating records.
 - Reconcile affected existing questions before adding new ones using [Open Questions Reconciliation](#open-questions-reconciliation-workflow).

@@ -20,17 +20,17 @@ Select one primary mode for an explicit wiki request and load only its workflow:
 | `scan` - Scan an existing repository | [Scan Existing Project Workflow](./references/initialization-workflows.md#scan-existing-project-workflow) |
 | `update` - Process notes, requirements, meetings, or durable analysis | [Update Workflow](./references/update-workflows.md#update-workflow) |
 | `update` - Ingest PDF, DOCX, text, or Markdown sources | [Document Intake Workflow](./references/update-workflows.md#document-intake-workflow), then [Document Ingestion](./references/document-ingestion.md) |
-| `sync` - Reconcile code changed outside the current agent task | [Sync Workflow](./references/synchronization-workflow.md#sync-workflow) |
+| `sync` - Reconcile external code changes or periodically check for missed drift | [Sync Workflow](./references/synchronization-workflow.md#sync-workflow) |
 | `maintain` - Validate, migrate, repair, or semantically lint a wiki | [Maintain Workflow](./references/maintenance-workflows.md#maintain-workflow) |
 | Before implementing, modifying, debugging, refactoring, testing, documenting, or planning code when `.project-wiki/INDEX.md` exists | [Automatic Context Preflight](./references/automatic-workflows.md#automatic-context-preflight) |
-| After agent-made source changes | [Automatic Post-Implementation Wiki Update](./references/automatic-workflows.md#automatic-post-implementation-wiki-update) |
+| After agent-made source changes, assess durable knowledge impact before writing | [Automatic Post-Implementation Wiki Update](./references/automatic-workflows.md#automatic-post-implementation-wiki-update) |
 
 Use [Document Templates](./assets/document-templates.md) when creating artifacts and [Requirement Authoring](./assets/requirements-change-templates.md#requirements-topic-scaling) for atomic REQ/NFR/CON records. Read [Wiki Structure](./references/wiki-structure.md) or [Schema Contract](./schema/project-wiki.yml) only for exact structure or contract values. Finalize edits with [Common Policies](./references/common-policies.md), including reconciliation and audit logging.
 
 ## Operating Contract
 
 1. Read `.project-wiki/INDEX.md` first when it exists, follow its routes, and open only the smallest relevant set of files. Use `REGISTRY.yml` only when indexes do not resolve the task.
-2. Run the automatic workflows around code work when the wiki exists; reserve `sync` for external or manual changes.
+2. Run the automatic workflows around code work when the wiki exists; skip wiki writes only after establishing that no durable knowledge, evidence, or recorded work state changes. Use `sync` for external/manual changes and periodic reconciliation.
 3. Follow the selected workflow completely. Prefer the supplied deterministic scripts over reproducing structural, validation, duplicate, extraction, or ledger logic in model reasoning.
 4. Finalize every meaningful edit with the shared checklist and audit log; reconcile only affected records.
 

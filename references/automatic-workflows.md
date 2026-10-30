@@ -7,6 +7,7 @@ Use these workflows after loading `SKILL.md`. Runtime paths, artifacts, generate
 Run this automatically whenever `.project-wiki/INDEX.md` exists and the user asks to implement, modify, debug, refactor, test, document, or plan code. The user should not need to invoke a separate `consult` mode.
 
 1. Read `.project-wiki/INDEX.md` first.
+   Reuse context already read in the same ongoing task while it remains current; do not reload unchanged pages after each small edit.
 2. Use the routing table to identify the smallest relevant section.
 3. Read the section `INDEX.md`, then only the linked documents needed for the task.
 4. If the needed context is missing, read `REGISTRY.yml` and traceability maps before broad code search.
@@ -17,14 +18,18 @@ Skip this preflight only when the task is unrelated to the project wiki and unre
 
 ## Automatic Post-Implementation Wiki Update
 
-Run this automatically after source code changes made by the agent through chat. The user should not need to invoke `sync` for agent-made changes.
+Assess wiki impact automatically after source code changes made by the agent through chat. The user should not need to invoke `sync` for changes that require immediate documentation. Finalize once per coherent task, rather than after each intermediate edit.
 
-1. Use `wiki_scope.py diff` to inspect included source changes (`--cached` for staged changes), `read` for new files, and `search` for targeted source context. Identify which wiki records were consulted before implementation. If no included source changed, skip source-driven wiki updates.
+1. Use `wiki_scope.py diff` to inspect included source changes (`--cached` for staged changes), `read` for new files, and `search` for targeted source context. Identify which wiki records were consulted before implementation. If no included source changed, skip source-driven wiki updates. Base the assessment on the task's changes, not unrelated pre-existing edits.
+   - Write only when the change makes a wiki claim false, changes durable knowledge or its evidence (requirements, decisions, public behavior, APIs/data contracts, operational constraints, significant risks, source paths or traceability), changes recorded work state (plan progress, work item status, or blockers), or resolves a relevant open question.
+   - Formatting, internal refactoring, extra tests for already documented behavior, and fixes restoring documented behavior normally need no wiki edits, unless they affect those facts, evidence, or recorded work state. Judge semantic impact, not diff size.
+   - If impact is uncertain, inspect only the relevant wiki page or recorded work item before deciding; uncertainty alone does not justify skipping. If impact remains unresolved, report that uncertainty rather than claiming no impact.
+   - If the assessment establishes that none applies, stop here: do not load broader wiki context, edit metadata, or log the skip. Do not defer a known false claim or material change to a future audit. Periodic `sync` and `maintain` remain rigorous recovery checks for missed drift.
 2. Document implemented or changed behavior under `technical/`, especially module, API, data, integration, testing, deployment, and security docs. Use overview files such as `architecture.md` and `codebase-map.md` as routing/summaries; create or update focused technical docs under the existing technical folders when an implemented area needs its own documentation.
 3. Update implementation docs when the change affects active plans, work items, or scan notes.
 4. Update traceability maps when source paths now implement, modify, or invalidate requirements, CRs, ADRs, or technical docs.
 5. Run [Open Questions Reconciliation](./common-policies.md#open-questions-reconciliation-workflow) when the implementation clarifies previously unresolved behavior.
-6. Update `REGISTRY.yml`, relevant section indexes, and `STATUS.md`.
+6. Apply [Post-Update Checklist](./common-policies.md#post-update-checklist) only to affected records: indexes for routing changes, `REGISTRY.yml` for catalog changes or required date freshness, and `STATUS.md` for changed project state.
 7. If the implementation introduced behavior not already represented by a requirement or CR, do not turn it into a confirmed product requirement by assumption. Document observed behavior in `technical/`; create a lightweight CR only when the change reflects a confirmed product or scope change, otherwise record an inferred open question when product intent needs confirmation.
 8. Record wiki changes using [Wiki Audit Log Workflow](./common-policies.md#wiki-audit-log-workflow).
 9. In the final response, mention the wiki files updated alongside the code changes.

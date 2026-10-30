@@ -41,7 +41,7 @@ Runtime paths, artifact names, and generated values are defined once in [schema/
 The wiki is designed for **progressive disclosure**: agents start at one short index, follow the smallest relevant set of links, and avoid flooding the context window with the entire project history.
 
 > [!TIP]
-> **Zero-Friction Workflow**: Once initialized, you don't need manual commands for everyday tasks. Agents automatically consult `.project-wiki/` before coding and update affected documentation and traceability before completing the response.
+> **Zero-Friction Workflow**: Once initialized, you don't need manual commands for everyday tasks. Agents automatically consult `.project-wiki/` before coding and update affected documentation and traceability when durable knowledge or evidence changes.
 
 ## Why Project Wiki?
 
@@ -112,7 +112,7 @@ Excluded paths are completely absent from wiki source discovery and tracking. Ex
 
 ### 3. Work normally
 
-Once `.project-wiki/INDEX.md` exists, ask the agent for ordinary implementation, debugging, refactoring, testing, documentation, or planning work. The skill should consult the relevant wiki context before acting and update affected wiki records after agent-made source changes.
+Once `.project-wiki/INDEX.md` exists, ask the agent for ordinary implementation, debugging, refactoring, testing, documentation, or planning work. The skill should consult the relevant wiki context before acting and assess whether agent-made source changes require a wiki update.
 
 ## See It In Action
 
@@ -167,7 +167,9 @@ flowchart LR
   Task[Agent task] --> Root[.project-wiki/INDEX.md]
   Root --> Context[Smallest relevant document set]
   Context --> Work[Plan, code, test, or document]
-  Work --> Update[Affected wiki records]
+  Work --> Impact{Durable knowledge or evidence changed?}
+  Impact -->|Yes| Update[Affected wiki records]
+  Impact -->|No| Done[Complete without wiki edits]
   Update --> Catalog[Registry, status, traceability, and audit log]
 ```
 
@@ -220,7 +222,8 @@ When `.project-wiki/` is absent, `init` and the first `scan` use `wiki_scaffold.
 After initialization, ordinary coding requests do not need a wiki command:
 
 - **Before code work**, the agent starts at `.project-wiki/INDEX.md` and follows only the smallest relevant context path.
-- **After agent-made code changes**, it updates affected technical docs, traceability, status, registry entries, and the wiki audit log.
+- **After agent-made code changes**, it updates only records affected by durable knowledge or evidence changes, false claims, or resolved questions. Routine changes with no such impact produce no wiki edits or skip logs; indexes, registry, and status change only as needed by the shared checklist.
+- **During periodic `sync` or `maintain`**, it rigorously checks for missed drift and knowledge gaps; the automatic write filter does not reduce explicit reconciliation or audit coverage.
 - **For durable answers**, it updates the owning canonical page or files a linked analysis only when the result has lasting project value.
 - **During `init` and `scan`**, it installs a marked project-wiki block in both `AGENTS.md` and `.github/copilot-instructions.md` without overwriting unrelated instructions.
 

@@ -1,13 +1,13 @@
 # Project Wiki Synchronization Workflow
 
-Use this workflow for code changed manually, by another tool, or outside the current agent chat flow.
+Use this workflow for code changed manually, by another tool, outside the current agent chat flow, or for periodic reconciliation of changes missed by automatic updates. The automatic write filter does not limit an explicit `sync`.
 
 ## Sync Workflow
 
 `sync` is not the same as `maintain`: sync reconciles wiki content with code reality; maintain audits wiki structure and consistency.
 
 1. Read `.project-wiki/INDEX.md`, `REGISTRY.yml`, `STATUS.md`, and `technical/codebase-map.md` if present.
-2. Identify source changes with `wiki_scope.py diff`, using `--base` for the last documented scan or the user's stated baseline when available.
+2. Identify source changes with `wiki_scope.py diff`, using `--base` for the last documented scan or the user's stated baseline when available. Include committed changes since that baseline, even when the working tree is clean. If no reliable baseline is available, compare current included sources against relevant technical docs and traceability; a clean diff alone does not establish that the wiki is current. State the reviewed scope and any coverage limits.
 3. Use `wiki_scope.py read`/`search` for affected sources, new files not shown by diff, and nearby tests/configuration. If no changes remain, report that no in-scope changes need synchronization.
 4. Update affected technical docs under `technical/` to reflect current code behavior.
 5. Update `traceability/code-map.md` and any relevant requirement or change impact maps.

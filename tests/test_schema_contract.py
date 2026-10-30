@@ -87,10 +87,10 @@ class SchemaContractTests(unittest.TestCase):
             ("`init` - Initialize an empty project wiki", "references/initialization-workflows.md", "Init Workflow"),
             ("`scan` - Scan an existing repository", "references/initialization-workflows.md", "Scan Existing Project Workflow"),
             ("`update` - Process notes, requirements, meetings, or durable analysis", "references/update-workflows.md", "Update Workflow"),
-            ("`sync` - Reconcile code changed outside the current agent task", "references/synchronization-workflow.md", "Sync Workflow"),
+            ("`sync` - Reconcile external code changes or periodically check for missed drift", "references/synchronization-workflow.md", "Sync Workflow"),
             ("`maintain` - Validate, migrate, repair, or semantically lint a wiki", "references/maintenance-workflows.md", "Maintain Workflow"),
             ("Before implementing, modifying, debugging, refactoring, testing, documenting, or planning code when `.project-wiki/INDEX.md` exists", "references/automatic-workflows.md", "Automatic Context Preflight"),
-            ("After agent-made source changes", "references/automatic-workflows.md", "Automatic Post-Implementation Wiki Update"),
+            ("After agent-made source changes, assess durable knowledge impact before writing", "references/automatic-workflows.md", "Automatic Post-Implementation Wiki Update"),
         )
         for trigger, relative_path, heading in expected_routes:
             anchor = validate_wiki.github_slug(heading)

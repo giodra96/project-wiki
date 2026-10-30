@@ -114,8 +114,8 @@ When `.project-wiki/INDEX.md` exists:
 
 - Before implementing, modifying, debugging, refactoring, testing, documenting, or planning code, read it and only the linked context needed for the task.
 - For wiki source access, use the skill's `wiki_scope.py` with `.project-wiki/.wikiignore`. Existing wiki history remains consultable; exclusions alone do not indicate drift.
-- After agent-made source changes, update affected wiki records, indexes, registry, status, traceability, and logs. Record observed behavior in `technical/`; do not infer product requirements from code.
-- Use the `update` workflow for notes/documents, `sync` for external code changes, and `maintain` for validation/migration. Follow the skill's deterministic helpers; never load PDF/DOCX sources directly into model context.
+- After agent-made source changes, write only if durable knowledge or evidence changes, a wiki claim becomes false, recorded plan progress, work item status, or blockers change, or a relevant open question is resolved. If impact is uncertain, check only the relevant wiki page or work item before deciding; report any remaining uncertainty. Skip wiki edits and logs only when the assessment establishes there is no impact. Update only affected records and required metadata once per coherent task, following `references/automatic-workflows.md`. Record observed behavior in `technical/`; do not infer product requirements from code.
+- Use the `update` workflow for notes/documents, `sync` for external code changes and periodic reconciliation, and `maintain` for validation/migration and semantic audits. Keep explicit `sync` and `maintain` rigorous even when automatic updates were skipped. Follow the skill's deterministic helpers; never load PDF/DOCX sources directly into model context.
 - Reconcile existing open questions before adding new ones. Log every meaningful wiki edit using the skill's Wiki Audit Log Workflow (`references/common-policies.md`), including its cumulative-entry rules and separate mandatory audit events.
 - Write wiki content in English and reply in the user's language unless requested otherwise.
 <!-- PROJECT-WIKI:END -->

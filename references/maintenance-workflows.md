@@ -4,7 +4,7 @@ Use these workflows for structural validation, schema migration, semantic lint, 
 
 ## Maintain Workflow
 
-Use this mode to keep the wiki healthy. `maintain` includes structural cleanup and semantic lint.
+Use this mode to keep the wiki healthy. `maintain` includes structural cleanup and semantic lint. The automatic write filter does not reduce this audit: check for missing durable knowledge, stale claims, and evidence gaps against current included sources, including changes not logged by automatic updates. Record the reviewed scope and coverage limits; use `sync` for broader source reconciliation when needed.
 
 1. Run [Schema Migration Workflow](#schema-migration-workflow).
 2. Run [Deterministic Structural Validation Workflow](#deterministic-structural-validation-workflow). Apply low-risk structural fixes and rerun the validator until it passes or only blocked findings remain.
@@ -28,7 +28,7 @@ The skill's current schema contract comes from `schema/project-wiki.yml`. Human 
 
 1. Read `.project-wiki/WIKI_VERSION.yml` if it exists. If it is missing, treat the wiki as `pre-versioned`.
 2. Read the current schema version from `schema/project-wiki.yml` and compare it with the recorded project wiki version.
-3. If the schema is current, record that no schema migration was needed and continue normal maintenance.
+3. If the schema is current, record that no schema migration was needed, refresh stale always-on instruction blocks using [Always-On Project Instruction Bootstrap](./initialization-workflows.md#always-on-project-instruction-bootstrap), and continue normal maintenance. Leave matching blocks untouched.
 4. If the schema is older or missing, create or update `.project-wiki/maintenance/schema-migration-YYYYMMDD.md` with planned and applied migration actions.
 5. Preserve existing content. Do not delete or overwrite user/project-authored files during schema migration.
 6. Create `.project-wiki/.wikiignore` with the comments-only scaffold content if missing; never overwrite existing rules. Create missing canonical directories and placeholder files from [Wiki structure](./wiki-structure.md), including `sources/`, `analysis/`, `maintenance/`, `alerts/`, `logs/`, and local templates.

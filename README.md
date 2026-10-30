@@ -198,13 +198,14 @@ Project Wiki is built around three distinct architectural layers:
 The skill exposes these user-facing modes:
 
 ```text
-init | scan | update | sync | maintain | config
+init | scan | update | sync | maintain | config | help
 ```
 
 These are hints, not a strict CLI parser. In Copilot, you can invoke the skill with prompts such as `/project-wiki init`. In other agents, use natural language such as "Use the project-wiki skill in scan mode".
 
 | Mode | Purpose |
 | --- | --- |
+| `help` | Show the single deterministic command guide. |
 | `config` | Show or change per-project preferences, including automatic synchronization. |
 | `init` | Create a complete `.project-wiki/` scaffold for a new project. |
 | `scan` | Analyze an existing codebase and generate the initial wiki. |
@@ -217,6 +218,18 @@ You do not have to use these exact argument hints for the skill to be useful. Th
 During `init` and `scan`, the skill also installs repository-level always-on instructions so future coding tasks keep using the wiki even when the user does not explicitly invoke the skill.
 
 When `.project-wiki/` is absent, `init` and the first `scan` use `wiki_scaffold.py` to generate the fixed canonical skeleton in staging, validate it, and publish it without replacing an existing target. A successful scaffold is not a completed initialization: project identity, code understanding, traceability, always-on instructions, and the final audit entry remain agent-owned semantic work.
+
+## User Help
+
+Ask the agent for the general command guide:
+
+```text
+/project-wiki help
+```
+
+The deterministic helper prints the single guide in [assets/user-help.md](assets/user-help.md), with commands and essential guidance on automatic updates, configuration, and source exclusions. It returns fixed English Markdown without inspecting or modifying a project, even before a wiki exists.
+
+From a terminal, use `python3 /path/to/project-wiki/scripts/wiki_help.py` with no positional arguments. Only the Python standard library is required. Chat commands are interpreted by an agent; the help helper displays guidance and never executes examples.
 
 ## Automatic Behavior
 
@@ -348,6 +361,7 @@ Agents use `review_progress.py inspect` for a compact outline and review state, 
 
 | Helper | Purpose |
 | --- | --- |
+| `wiki_help.py` | Prints the single deterministic user guide without project access or writes |
 | `wiki_config.py` | Reads, validates, and atomically edits project preferences; missing config uses defaults |
 | `wiki_scope.py` | Discovers, reads, searches, and diffs sources with automatic `.wikiignore` filtering |
 | `wiki_scaffold.py` | Creates and validates the fixed canonical skeleton only when the target wiki is absent; never merges or overwrites |

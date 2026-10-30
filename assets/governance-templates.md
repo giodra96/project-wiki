@@ -247,7 +247,7 @@ confidence: confirmed
 ## Version Check
 
 - Previous schema version: TBD
-- Target schema version: 1.6.1
+- Target schema version: 1.7.0
 - Migration needed: yes | no
 
 ## Actions Applied

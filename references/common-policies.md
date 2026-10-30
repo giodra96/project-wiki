@@ -2,6 +2,8 @@
 
 Apply to every mode and automatic workflow; use this checklist when finalizing edits.
 
+For automatic work, apply the [Automatic Write Gate](./configuration.md#automatic-write-gate) first. Disabled or invalid configuration skips automatic writes, reconciliation, and logging before these policies are invoked. Explicit configuration changes affect only `config.yml` and require no wiki audit entry.
+
 ## Language Policy
 
 Write wiki content and generated instruction blocks in English, preserving important source-language domain terms. Reply in the user's language unless requested otherwise.

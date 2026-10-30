@@ -18,8 +18,10 @@ from urllib.parse import unquote, urlsplit
 
 try:
     from .wiki_scope import WikiScope, WikiScopeError
+    from .wiki_config import CONFIG_FILE, WikiConfigError, read_config
 except ImportError:
     from wiki_scope import WikiScope, WikiScopeError
+    from wiki_config import CONFIG_FILE, WikiConfigError, read_config
 
 
 try:
@@ -53,6 +55,7 @@ HTML_ANCHOR_PATTERN = re.compile(r"<[A-Za-z][^>]*\s(?:id|name)\s*=\s*[\"']([^\"'
 DETERMINISTIC_CHECKS = (
     "canonical tree and schema version",
     "YAML and JSON parsing",
+    "optional project configuration version and option types",
     "Markdown frontmatter fields and value domains",
     "document ID format, uniqueness, and filename alignment",
     "atomic requirement locations and structured intake evidence",
@@ -220,6 +223,7 @@ class WikiValidator:
         self.check_symlinks()
         self.check_required_tree()
         self.parse_structured_files()
+        self.check_config()
         self.scan_markdown_files()
         self.check_intake_source_info()
         self.check_intake_manifests()
@@ -254,6 +258,12 @@ class WikiValidator:
                 continue
             if not path.is_file():
                 self.add("error", "required-file-missing", relative, "Required wiki file is missing.")
+
+    def check_config(self) -> None:
+        try:
+            read_config(self.wiki_root)
+        except (WikiConfigError, OSError, UnicodeError) as error:
+            self.add("error", "wiki-config-invalid", CONFIG_FILE, str(error))
 
     def check_symlinks(self) -> None:
         for path in sorted(self.wiki_root.rglob("*")):

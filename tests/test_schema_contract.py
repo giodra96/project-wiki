@@ -291,6 +291,19 @@ class SchemaContractTests(unittest.TestCase):
         self.assertIn("schema-version-reference-missing", codes)
         self.assertIn("template-wiki-version-drift", codes)
 
+    def test_stale_schema_date_in_version_template_is_reported(self) -> None:
+        repo_root = self.copy_contract_surface()
+        templates = repo_root / "assets" / "core-templates.md"
+        templates.write_text(
+            templates.read_text(encoding="utf-8").replace(
+                f"schema_updated: {self.contract.schema_updated}",
+                "schema_updated: 1900-01-01",
+            ),
+            encoding="utf-8",
+        )
+
+        self.assertIn("template-wiki-version-drift", self.codes(repo_root))
+
     def test_template_status_and_id_domains_are_checked(self) -> None:
         repo_root = self.copy_contract_surface()
         intake_templates = repo_root / "assets" / "intake-source-templates.md"

@@ -2,8 +2,8 @@ manifest_version: 1
 
 schema:
   name: project-wiki
-  version: 1.6.1
-  updated: '2026-09-27'
+  version: 1.7.0
+  updated: '2026-10-30'
 
 registries:
   document_version: 1
@@ -137,6 +137,7 @@ canonical_tree:
     - templates/work-item.md
     - templates/wiki-log.md
   example_files:
+    - config.yml
     - requirements/functional/<project-topic>.md
     - requirements/non-functional/<project-topic>.md
     - changes/requests/CR-YYYYMMDD-001-short-title.md

@@ -2,6 +2,8 @@
 
 Use this workflow for code changed manually, by another tool, outside the current agent chat flow, or for periodic reconciliation of changes missed by automatic updates. The automatic write filter does not limit an explicit `sync`.
 
+Explicit `sync` also reconciles agent changes accumulated while `automation.auto_sync` was disabled. It runs regardless of that setting and does not change it. Re-enabling auto-sync alone does not recover the backlog; never treat a skipped automatic update as a synchronization baseline.
+
 ## Sync Workflow
 
 `sync` is not the same as `maintain`: sync reconciles wiki content with code reality; maintain audits wiki structure and consistency.

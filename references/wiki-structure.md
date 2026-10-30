@@ -10,6 +10,8 @@ Use [`schema/project-wiki.yml`](../schema/project-wiki.yml) for exact tree entri
 
 ## Root Files
 
+`config.yml` stores optional, versioned project preferences, including `automation.auto_sync`. New scaffolds include it; existing wikis default to enabled when it is absent. It has no frontmatter or registry entry. See [Configuration](./configuration.md). Its version is independent of the wiki schema version.
+
 `INDEX.md` is the agent routing map. Keep it short. It should answer: "What should I open for this task?"
 
 `WIKI_VERSION.yml` records the project wiki schema version currently applied to this repository. `maintain` uses it to detect and migrate older wiki structures.

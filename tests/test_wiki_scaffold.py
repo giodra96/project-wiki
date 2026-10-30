@@ -48,7 +48,7 @@ class WikiScaffoldTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertEqual(stderr, "")
         self.assertFalse(os.path.lexists(self.target))
-        self.assertEqual(payload["files"], len(self.contract.required_files))
+        self.assertEqual(payload["files"], len(self.contract.required_files) + 1)
         self.assertEqual(payload["actual_directories"], len(wiki_scaffold.expected_directories(self.contract)))
         self.assertFalse(payload["scaffold_created"])
         self.assertFalse(payload["project_initialization_complete"])
@@ -68,7 +68,10 @@ class WikiScaffoldTests(unittest.TestCase):
         self.assertEqual(stderr, "")
         self.assertTrue(payload["scaffold_created"])
         self.assertEqual(payload["validation"], {"scaffold_contract": "passed", "wiki": "passed"})
-        self.assertEqual(actual_files, set(self.contract.required_files))
+        self.assertEqual(actual_files, set(self.contract.required_files) | {"config.yml"})
+        self.assertEqual(yaml.safe_load((self.target / "config.yml").read_text()), {
+            "config_version": 1, "automation": {"auto_sync": True},
+        })
         self.assertEqual(report.findings, ())
         self.assertTrue((self.target / "requirements" / "functional" / "INDEX.md").is_file())
         self.assertTrue((self.target / "requirements" / "non-functional" / "INDEX.md").is_file())

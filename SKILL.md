@@ -1,14 +1,14 @@
 ---
 name: project-wiki
 description: 'Create, scan, update, sync, and maintain .project-wiki/ project knowledge bases, including requirements, document intake, and traceability. Consult and update an existing project wiki during coding tasks.'
-argument-hint: 'init | scan | update | sync | maintain'
+argument-hint: 'init | scan | update | sync | maintain | config'
 ---
 
 # Project Wiki
 
 Maintain an agent-readable knowledge base in `.project-wiki/`. Load only the workflow and project context needed for the task.
 
-Current project wiki schema version: `1.6.1` (canonical value: `./schema/project-wiki.yml`).
+Current project wiki schema version: `1.7.0` (canonical value: `./schema/project-wiki.yml`).
 
 ## Route The Task
 
@@ -22,6 +22,7 @@ Select one primary mode for an explicit wiki request and load only its workflow:
 | `update` - Ingest PDF, DOCX, text, or Markdown sources | [Document Intake Workflow](./references/update-workflows.md#document-intake-workflow), then [Document Ingestion](./references/document-ingestion.md) |
 | `sync` - Reconcile external code changes or periodically check for missed drift | [Sync Workflow](./references/synchronization-workflow.md#sync-workflow) |
 | `maintain` - Validate, migrate, repair, or semantically lint a wiki | [Maintain Workflow](./references/maintenance-workflows.md#maintain-workflow) |
+| `config` - Show or change project wiki preferences | [Configuration Workflow](./references/configuration.md#configuration-workflow) |
 | Before implementing, modifying, debugging, refactoring, testing, documenting, or planning code when `.project-wiki/INDEX.md` exists | [Automatic Context Preflight](./references/automatic-workflows.md#automatic-context-preflight) |
 | After agent-made source changes, assess durable knowledge impact before writing | [Automatic Post-Implementation Wiki Update](./references/automatic-workflows.md#automatic-post-implementation-wiki-update) |
 
@@ -30,7 +31,7 @@ Use [Document Templates](./assets/document-templates.md) when creating artifacts
 ## Operating Contract
 
 1. Read `.project-wiki/INDEX.md` first when it exists, follow its routes, and open only the smallest relevant set of files. Use `REGISTRY.yml` only when indexes do not resolve the task.
-2. Run the automatic workflows around code work when the wiki exists; skip wiki writes only after establishing that no durable knowledge, evidence, or recorded work state changes. Use `sync` for external/manual changes and periodic reconciliation.
+2. Read effective `.project-wiki/config.yml` with `scripts/wiki_config.py --wiki-root .project-wiki show` after the index and before automatic workflows. Keep context preflight active; apply the [Automatic Write Gate](./references/configuration.md#automatic-write-gate) before automatic assessment or writes. Missing config defaults to enabled; disabled or invalid config suspends automatic writes. When enabled, skip writes only after establishing no durable knowledge, evidence, or recorded work state impact. Explicit wiki requests remain available regardless of the toggle; use `sync` for accumulated changes and periodic reconciliation.
 3. Follow the selected workflow completely. Prefer the supplied deterministic scripts over reproducing structural, validation, duplicate, extraction, or ledger logic in model reasoning.
 4. Finalize every meaningful edit with the shared checklist and audit log; reconcile only affected records.
 

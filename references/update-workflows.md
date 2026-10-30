@@ -41,6 +41,8 @@ An explicit `update` request authorizes conservative integration by default. For
 
 Use this workflow when a user question or agent answer creates durable project knowledge. Do not file every answer into the wiki.
 
+For automatic filing during ordinary project work, first apply the [Automatic Write Gate](./configuration.md#automatic-write-gate). Disabled or invalid configuration skips this workflow and its related reconciliation and logs. An explicit request to document the answer still runs.
+
 File an answer back into the wiki only when it creates lasting value, such as a stable tradeoff analysis, cross-module impact map, requirement clarification, resolved open question, risk analysis, or meaningful connection between requirements, CRs, ADRs, technical docs, and source paths.
 
 1. Decide whether the answer belongs in an existing canonical file. If yes, update that file instead of creating a new analysis page.

@@ -19,6 +19,11 @@ from typing import Any
 import yaml  # type: ignore[import-untyped]
 
 try:
+    from .wiki_config import CONFIG_FILE, default_config, render_config
+except ImportError:
+    from wiki_config import CONFIG_FILE, default_config, render_config
+
+try:
     from .check_contracts import fenced_block_after_heading
     from .schema_contract import (
         ScaffoldFileRecipe,
@@ -133,7 +138,7 @@ def scaffold_report(
         "date": scaffold_date,
         "schema_declared_directories": len(contract.required_directories),
         "actual_directories": len(expected_directories(contract)),
-        "files": len(contract.required_files),
+        "files": len(contract.required_files) + 1,
         "scaffold_created": False,
         "project_initialization_complete": False,
         "semantic_content_captured": False,
@@ -200,6 +205,7 @@ def build_scaffold_contents(contract: SchemaContract, scaffold_date: str) -> dic
         contents[relative] = render_recipe(relative, recipe, contract, scaffold_date)
     registry_path = contract.semantic_paths.document_registry_file
     contents[registry_path] = render_document_registry(contents, contract, scaffold_date)
+    contents[CONFIG_FILE] = render_config(default_config())
     return contents
 
 
@@ -400,7 +406,7 @@ def write_scaffold(
 ) -> None:
     for relative in sorted(expected_directories(contract), key=lambda value: (value.count("/"), value)):
         (staging / relative).mkdir(parents=True, exist_ok=True)
-    for relative in contract.required_files:
+    for relative in contents:
         path = staging / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(contents[relative], encoding="utf-8")
@@ -422,7 +428,7 @@ def validate_scaffold_stage(
         for path in staging.rglob("*")
         if path.is_dir() and not path.is_symlink()
     }
-    if actual_files != set(contract.required_files):
+    if actual_files != set(contract.required_files) | {CONFIG_FILE}:
         raise ScaffoldError("generated scaffold file set does not match the canonical contract")
     if actual_directories != expected_directories(contract):
         raise ScaffoldError("generated scaffold directory set does not match the canonical contract")

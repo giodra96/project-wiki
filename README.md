@@ -28,7 +28,7 @@ Turn requirements, decisions, code knowledge, and project history into an indexe
 
 <p align="center">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg"></a>
-  <img alt="Wiki schema 1.6.1" src="https://img.shields.io/badge/wiki_schema-1.6.1-355c7d">
+  <img alt="Wiki schema 1.7.0" src="https://img.shields.io/badge/wiki_schema-1.7.0-355c7d">
   <img alt="Five project wiki workflows" src="https://img.shields.io/badge/workflows-5-2f855a">
   <img alt="IDE neutral agent skill" src="https://img.shields.io/badge/agent_skill-IDE--neutral-6b7280">
   <img alt="Markdown based storage" src="https://img.shields.io/badge/storage-Markdown-111827?logo=markdown">
@@ -136,7 +136,7 @@ The update classifies explicit intent, creates lightweight change or decision re
 Implement CSV export for ticket lists.
 ```
 
-When the wiki exists, the agent should read the relevant requirement and technical records, implement and validate the change, then update affected docs and traceability before finishing. No separate `consult` command is required, and `sync` is not needed for source changes made by the agent in the same workflow.
+When the wiki exists, the agent should read the relevant requirement and technical records, implement and validate the change, then update affected docs and traceability before finishing when auto-sync is enabled (the default). No separate `consult` command is required, and `sync` is not needed for source changes made by the agent while auto-sync is enabled.
 
 ### Reconcile manual changes
 
@@ -180,7 +180,7 @@ Project Wiki is built around three distinct architectural layers:
 2. **Canonical Knowledge Layer (`requirements/`, `changes/decisions/`, `technical/`, `traceability/`, `alerts/`)**:
    The structured long-term memory of the repository. Every requirement (`REQ-*`), decision (`ADR-*`), and change request (`CR-*`) has a permanent ID and explicit links to related source code paths.
 3. **Active Agent Engine (Preflight, Auto-Update, Ingestion, `sync`, `maintain`)**:
-   The operational skill runtime that keeps the wiki synchronized with the codebase. It automatically reads context before coding and updates documentation after changes without requiring manual user commands.
+   The operational skill runtime that keeps the wiki synchronized with the codebase. It automatically reads context before coding and, when auto-sync is enabled, updates documentation after changes without requiring manual user commands.
 
 > [!NOTE]
 > **The Knowledge Provenance Principle**: Raw external documents (PDF, DOCX) ingested via `intake/` are treated as **provenance** (evidence), never as unreviewed canonical truth. Information becomes canonical only when classified and integrated into official wiki records. Likewise, code scanned via `sync` documents observed technical reality, while confirmed business requirements require explicit product intent.
@@ -198,13 +198,14 @@ Project Wiki is built around three distinct architectural layers:
 The skill exposes these user-facing modes:
 
 ```text
-init | scan | update | sync | maintain
+init | scan | update | sync | maintain | config
 ```
 
 These are hints, not a strict CLI parser. In Copilot, you can invoke the skill with prompts such as `/project-wiki init`. In other agents, use natural language such as "Use the project-wiki skill in scan mode".
 
 | Mode | Purpose |
 | --- | --- |
+| `config` | Show or change per-project preferences, including automatic synchronization. |
 | `init` | Create a complete `.project-wiki/` scaffold for a new project. |
 | `scan` | Analyze an existing codebase and generate the initial wiki. |
 | `update` | Convert meeting minutes, documents, chat notes, planning notes, or new requirements into wiki updates. |
@@ -222,12 +223,37 @@ When `.project-wiki/` is absent, `init` and the first `scan` use `wiki_scaffold.
 After initialization, ordinary coding requests do not need a wiki command:
 
 - **Before code work**, the agent starts at `.project-wiki/INDEX.md` and follows only the smallest relevant context path.
-- **After agent-made code changes**, it updates only records affected by durable knowledge or evidence changes, false claims, or resolved questions. Routine changes with no such impact produce no wiki edits or skip logs; indexes, registry, and status change only as needed by the shared checklist.
+- **After agent-made code changes**, when auto-sync is enabled, it updates only records affected by durable knowledge or evidence changes, false claims, or resolved questions. Routine changes with no such impact produce no wiki edits or skip logs; indexes, registry, and status change only as needed by the shared checklist.
 - **During periodic `sync` or `maintain`**, it rigorously checks for missed drift and knowledge gaps; the automatic write filter does not reduce explicit reconciliation or audit coverage.
-- **For durable answers**, it updates the owning canonical page or files a linked analysis only when the result has lasting project value.
+- **For durable answers**, when auto-sync is enabled or documentation is explicitly requested, it updates the owning canonical page or files a linked analysis only when the result has lasting project value.
 - **During `init` and `scan`**, it installs a marked project-wiki block in both `AGENTS.md` and `.github/copilot-instructions.md` without overwriting unrelated instructions.
 
 See [Automatic Context Preflight](references/automatic-workflows.md#automatic-context-preflight), [Automatic Post-Implementation Wiki Update](references/automatic-workflows.md#automatic-post-implementation-wiki-update), and [Always-On Project Instruction Bootstrap](references/initialization-workflows.md#always-on-project-instruction-bootstrap) for the full procedures.
+
+## Project Configuration
+
+Project preferences live in `.project-wiki/config.yml`:
+
+```yaml
+config_version: 1
+
+automation:
+  auto_sync: true
+```
+
+New scaffolds include this file. Existing wikis without it keep auto-sync enabled; no configuration file or content restructuring is required. Use `maintain` when upgrading the wiki schema to refresh version metadata and always-on instructions. Configuration has its own version, separate from the wiki schema, and is not registered as a wiki document.
+
+```text
+/project-wiki config
+/project-wiki config set automation.auto_sync false
+/project-wiki config set automation.auto_sync true
+```
+
+With auto-sync disabled, the agent keeps consulting the wiki but skips automatic impact assessment and all automatic wiki writes, including status, traceability, durable answer filing, and logs. Explicit `sync`, `update`, `scan`, and `maintain` requests still run. After experiments, run `/project-wiki sync` to reconcile accumulated changes, including committed changes; re-enabling auto-sync does not recover that backlog automatically.
+
+Invalid configuration is reported and suspends automatic writes rather than silently enabling them. Configuration commands change only `config.yml` and do not trigger sync or audit-log updates. Settings can also be edited directly and committed with the repository. For existing installations, run `maintain` or `scan` to refresh the generated instruction blocks in `AGENTS.md` and `.github/copilot-instructions.md` so they honor configuration.
+
+See [Configuration](references/configuration.md) for helper commands, validation, and precedence.
 
 ## Generated Wiki
 
@@ -237,6 +263,7 @@ The complete structure is always created. Files that are not useful yet can rema
 
 ```text
 .project-wiki/
+|-- config.yml           # Project preferences (optional for existing wikis)
 |-- .wikiignore           # Repository source exclusions; root-relative patterns
 |-- INDEX.md              # Root routing map (entrypoint for agents & humans)
 |-- PROJECT.md            # Project vision, core constraints, and stack
@@ -321,6 +348,7 @@ Agents use `review_progress.py inspect` for a compact outline and review state, 
 
 | Helper | Purpose |
 | --- | --- |
+| `wiki_config.py` | Reads, validates, and atomically edits project preferences; missing config uses defaults |
 | `wiki_scope.py` | Discovers, reads, searches, and diffs sources with automatic `.wikiignore` filtering |
 | `wiki_scaffold.py` | Creates and validates the fixed canonical skeleton only when the target wiki is absent; never merges or overwrites |
 | `check_inbox.py` | Hashes inbox documents, detects historical/current duplicates, and returns `process`, `skip`, or `review` |

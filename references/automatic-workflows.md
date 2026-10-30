@@ -8,17 +8,20 @@ Run this automatically whenever `.project-wiki/INDEX.md` exists and the user ask
 
 1. Read `.project-wiki/INDEX.md` first.
    Reuse context already read in the same ongoing task while it remains current; do not reload unchanged pages after each small edit.
+   Read effective configuration with `wiki_config.py --wiki-root .project-wiki show` and apply the [Automatic Write Gate](./configuration.md#automatic-write-gate). Disabled or invalid configuration keeps preflight active; verify relevant claims against current sources because automatic updates may have been skipped.
 2. Use the routing table to identify the smallest relevant section.
 3. Read the section `INDEX.md`, then only the linked documents needed for the task.
 4. If the needed context is missing, read `REGISTRY.yml` and traceability maps before broad code search.
 5. Summarize only the wiki facts that affect the task, then proceed with the requested work.
-6. If implementation changes invalidate wiki content, update the wiki as part of the same task.
+6. If implementation changes invalidate wiki content and the automatic write gate permits it, update the wiki as part of the same task.
 
 Skip this preflight only when the task is unrelated to the project wiki and unrelated to code or project behavior, or when `.project-wiki/INDEX.md` does not exist yet.
 
 ## Automatic Post-Implementation Wiki Update
 
 Assess wiki impact automatically after source code changes made by the agent through chat. The user should not need to invoke `sync` for changes that require immediate documentation. Finalize once per coherent task, rather than after each intermediate edit.
+
+First apply the [Automatic Write Gate](./configuration.md#automatic-write-gate), refreshing configuration if it may have changed. With `automation.auto_sync: false` or invalid configuration, stop before step 1: skip the assessment and all automatic wiki writes and logs. Explicit wiki requests remain available.
 
 1. Use `wiki_scope.py diff` to inspect included source changes (`--cached` for staged changes), `read` for new files, and `search` for targeted source context. Identify which wiki records were consulted before implementation. If no included source changed, skip source-driven wiki updates. Base the assessment on the task's changes, not unrelated pre-existing edits.
    - Write only when the change makes a wiki claim false, changes durable knowledge or its evidence (requirements, decisions, public behavior, APIs/data contracts, operational constraints, significant risks, source paths or traceability), changes recorded work state (plan progress, work item status, or blockers), or resolves a relevant open question.
